@@ -53,7 +53,6 @@
 
 #define HEADSET 0
 #define HOOK 1
-#define MIC  2
 
 #define HEADSET_IN 1
 #define HEADSET_OUT 0
@@ -81,9 +80,9 @@ struct headset_priv {
 	
 	unsigned int irq[2];
 	unsigned int irq_type[2];
-	struct delayed_work h_delayed_work[3];
+	struct delayed_work h_delayed_work[2];
 	struct switch_dev sdev;
-	struct mutex mutex_lock[3];	
+	struct mutex mutex_lock[2];	
 	struct timer_list headset_timer;
 	unsigned char *keycodes;
 };
@@ -123,22 +122,6 @@ int Headset_status(void)
 }
 EXPORT_SYMBOL_GPL(Headset_status);
 
-
-#define MAIN_MIC  0
-#define HP_MIC    1
-static void Switch_Mic_Mode(int mode)
-{
-	if(headset_info->pdata->Sw_Mic_IO == INVALID_GPIO)
-		return;
-	if(MAIN_MIC == mode)
-	{
-		gpio_set_value(headset_info->pdata->Sw_Mic_IO,headset_info->pdata->Main_Mic_value);
-	}
-	else if(HP_MIC == mode)
-	{
-		gpio_set_value(headset_info->pdata->Sw_Mic_IO,!headset_info->pdata->Main_Mic_value);
-	}
-}
 static int read_gpio(int gpio)
 {
 	int i,level;
@@ -293,7 +276,7 @@ static void Hook_work(struct work_struct *work)
 		DBG("old_status == headset_info->hook_status\n");
 		goto RE_ERROR;
 	}	
-	DBG("Hook_work -- level = %d  hook status is %s\n",level,headset_info->hook_status?"key down":"key dup");	
+	DBG("Hook_work -- level = %d  hook status is %s\n",level,headset_info->hook_status?"key down":"key up");	
 	if(headset_info->hook_status == HOOK_DOWN)
 	{
 		if(pdata->Hook_down_type == HOOK_DOWN_HIGH)
@@ -370,16 +353,6 @@ static void headset_timer_callback(unsigned long arg)
 	DBG("headset_info->cur_headset_status = %d\n",headset_info->cur_headset_status);	
 
 out:
-	mutex_unlock(&headset_info->mutex_lock[MIC]);
-        return;
-
-}
-static void headset_timer_callback(unsigned long arg)
-{
-	
-	DBG("---headset_timer_callback---\n");
-        schedule_delayed_work(&headset_info->h_delayed_work[MIC], msecs_to_jiffies(50));
-
 	return;
 }
 
@@ -437,11 +410,9 @@ static int rockchip_headsetobserve_probe(struct platform_device *pdev)
 	
 	mutex_init(&headset->mutex_lock[HEADSET]);
 	mutex_init(&headset->mutex_lock[HOOK]);
-	mutex_init(&headset->mutex_lock[MIC]);
 	
 	INIT_DELAYED_WORK(&headset->h_delayed_work[HEADSET], headsetobserve_work);
 	INIT_DELAYED_WORK(&headset->h_delayed_work[HOOK], Hook_work);
-	INIT_DELAYED_WORK(&headset->h_delayed_work[MIC],Hp_mic_work);
 
 	headset->isMic = 0;
 	setup_timer(&headset->headset_timer, headset_timer_callback, (unsigned long)headset);
@@ -478,7 +449,7 @@ static int rockchip_headsetobserve_probe(struct platform_device *pdev)
 	//------------------------------------------------------------------
 	if (pdata->Headset_gpio) {
 		if(pdata->Headset_gpio == NULL){
-			dev_err(&pdev->dev,"failed init hook,please full hook_io_init function in board\n");
+			dev_err(&pdev->dev,"failed init headset,please full hook_io_init function in board\n");
 			goto failed_free_dev;
 		}	
 		ret = pdata->headset_io_init(pdata->Headset_gpio);
