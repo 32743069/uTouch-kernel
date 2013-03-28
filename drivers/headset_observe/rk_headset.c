@@ -171,7 +171,7 @@ static irqreturn_t Hook_interrupt(int irq, void *dev_id)
 {
 	DBG("---Hook_interrupt---\n");	
 //	disable_irq_nosync(headset_info->irq[HOOK]);
-	schedule_delayed_work(&headset_info->h_delayed_work[HOOK], msecs_to_jiffies(50));
+	schedule_delayed_work(&headset_info->h_delayed_work[HOOK], msecs_to_jiffies(100));
 	return IRQ_HANDLED;
 }
 
@@ -217,7 +217,7 @@ static void headsetobserve_work(struct work_struct *work)
 			irq_set_irq_type(headset_info->irq[HEADSET],IRQF_TRIGGER_RISING);
 		if (pdata->Hook_gpio) {
 			del_timer(&headset_info->headset_timer);//Start the timer, wait for switch to the headphone channel
-			headset_info->headset_timer.expires = jiffies + 10;
+			headset_info->headset_timer.expires = jiffies + 100;
 			add_timer(&headset_info->headset_timer);
 			goto out;
 		}
@@ -239,7 +239,6 @@ static void headsetobserve_work(struct work_struct *work)
 			irq_set_irq_type(headset_info->irq[HEADSET],IRQF_TRIGGER_RISING);
 		else
 			irq_set_irq_type(headset_info->irq[HEADSET],IRQF_TRIGGER_FALLING);
-		Switch_Mic_Mode(MAIN_MIC);
 	}
 	rk28_send_wakeup_key();
 	switch_set_state(&headset_info->sdev, headset_info->cur_headset_status);	
@@ -282,7 +281,7 @@ static void Hook_work(struct work_struct *work)
 		goto RE_ERROR;
 	
 	old_status = headset_info->hook_status;
-//	DBG("Hook_work -- level = %d\n",level);
+	DBG("Hook_work -- level = %d\n",level);
 	
 	if(level == 0)
 		headset_info->hook_status = pdata->Hook_down_type == HOOK_DOWN_HIGH?HOOK_UP:HOOK_DOWN;
@@ -294,7 +293,7 @@ static void Hook_work(struct work_struct *work)
 		DBG("old_status == headset_info->hook_status\n");
 		goto RE_ERROR;
 	}	
-	DBG("Hook_work -- level = %d  hook status is %s\n",level,headset_info->hook_status?"key down":"key dup");	
+	DBG("Hook_work -- level = %d  hook status is %s\n",level,headset_info->hook_status?"key up":"key down");	
 	if(headset_info->hook_status == HOOK_DOWN)
 	{
 		if(pdata->Hook_down_type == HOOK_DOWN_HIGH)
@@ -315,34 +314,44 @@ RE_ERROR:
 	mutex_unlock(&headset_info->mutex_lock[HOOK]);
 }
 
-static void Hp_mic_work(struct work_struct *work)
+static void headset_timer_callback(unsigned long arg)
 {
-        int level = 0;
-	struct rk_headset_pdata *pdata = headset_info->pdata;
+	struct headset_priv *headset = (struct headset_priv *)(arg);
+	struct rk_headset_pdata *pdata = headset->pdata;
+	int level = 0;
+	
+//	printk("headset_timer_callback,headset->headset_status=%d\n",headset->headset_status);	
 
-	printk("hp_mic_work---------\n");
-	mutex_lock(&headset_info->mutex_lock[MIC]);
-        if(headset_info->headset_status == HEADSET_OUT)
-        {
-                printk("Headset is out\n");
-                goto out;
-        }
-        level = read_gpio(pdata->Hook_gpio);
-        if(level < 0)
-                goto out;
-        if((level > 0 && pdata->Hook_down_type == HOOK_DOWN_LOW)
-                || (level == 0 && pdata->Hook_down_type == HOOK_DOWN_HIGH))
-        {
-                headset_info->isMic = 1;//have mic
-                DBG("enable headset_hook irq\n");
-                enable_irq(headset_info->irq[HOOK]);
-                headset_info->isHook_irq = enable;
-                headset_info->hook_status = HOOK_UP;
+	if(headset->headset_status == HEADSET_OUT)
+	{
+		printk("Headset is out\n");
+		goto out;
+	}
+	#ifdef CONFIG_SND_SOC_WM8994
+	if(wm8994_set_status() != 0)
+	{
+	//	printk("wait wm8994 set the MICB2\n");
+	//	headset_info->headset_timer.expires = jiffies + 500;
+		headset_info->headset_timer.expires = jiffies + 10;
+		add_timer(&headset_info->headset_timer);	
+		goto out;
+	}
+	#endif
+	level = read_gpio(pdata->Hook_gpio);
+	if(level < 0)
+		goto out;
+	if((level > 0 && pdata->Hook_down_type == HOOK_DOWN_LOW)
+		|| (level == 0 && pdata->Hook_down_type == HOOK_DOWN_HIGH))
+	{
+		headset->isMic = 1;//have mic
+		DBG("enable headset_hook irq\n");
+		enable_irq(headset_info->irq[HOOK]);
+		headset->isHook_irq = enable;
+		headset_info->hook_status = HOOK_UP;
                 if(pdata->Hook_down_type == HOOK_DOWN_HIGH)
                         irq_set_irq_type(headset_info->irq[HOOK],IRQF_TRIGGER_RISING);
                 else
                         irq_set_irq_type(headset_info->irq[HOOK],IRQF_TRIGGER_FALLING);
-		Switch_Mic_Mode(HP_MIC);
 
 	}	
 	else	
