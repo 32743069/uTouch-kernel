@@ -25,6 +25,15 @@
 #define CODEC_MODE         1
 
 static struct modem_sound_data *modem_sound;
+int (*set_codec_for_pcm_modem)(int cmd) = NULL; /* Set the codec used only for PCM modem */
+void (*set_codec_spk)(int on) = NULL;
+#if defined(CONFIG_SND_RK_SOC_RK2928) ||  defined(CONFIG_SND_RK29_SOC_RK610_PHONEPAD)
+extern void call_set_spk(int on);
+#endif
+#ifdef CONFIG_SND_SOC_ES8323_PCM
+extern int set_es8323(int cmd);
+#endif
+
 int modem_sound_spkctl(int status)
 {
 	if(modem_sound->spkctl_io == INVALID_GPIO)
@@ -93,41 +102,46 @@ static long modem_sound_ioctl(struct file *filp, unsigned int cmd, unsigned long
 	switch (cmd){
 		case IOCTL_MODEM_EAR_PHOEN:
 			DBG("modem_sound_ioctl: MODEM_EAR_PHONE\n");
-			modem_sound_spkctl(DISABLE);
-			mdelay(500);
-			modem_io_ctl(CODEC_MODE);
-			modem_sound_spkctl(DISABLE);
-	
+			if (set_codec_for_pcm_modem)
+				set_codec_for_pcm_modem(RCV);
 			break;
 		case IOCTL_MODEM_SPK_PHONE:
 			DBG("modem_sound_ioctl: MODEM_SPK_PHONE\n");
-			modem_sound_spkctl(DISABLE);
-			modem_io_ctl(MODEM_MODE);
+			if (set_codec_for_pcm_modem)
+				set_codec_for_pcm_modem(SPK_PATH);
+			if(set_codec_spk)
+				set_codec_spk(1);
 			modem_sound_spkctl(ENABLE);
-			
 			break;
-		case IOCTL_MODEM_HP_WITHMIC_PHONE:
+	  	case IOCTL_MODEM_HP_WITHMIC_PHONE:
 	  		DBG("modem_sound_ioctl: MODEM_HP_WITHMIC_PHONE\n");
-			modem_io_ctl(MODEM_MODE);
+			if (set_codec_for_pcm_modem)
+				set_codec_for_pcm_modem(HP_PATH);
+			if(set_codec_spk)
+				set_codec_spk(2);
 			modem_sound_spkctl(DISABLE);
 			break;
-	  	case IOCTL_MODEM_HP_NOMIC_PHONE:
-	  		DBG("modem_sound_ioctl: MODEM_HP_PHONE\n");
-			modem_io_ctl(MODEM_MODE);
-			modem_sound_spkctl(DISABLE);
-			break;
-			
 		case IOCTL_MODEM_BT_PHONE:
-			modem_io_ctl(MODEM_MODE);
-			modem_sound_spkctl(DISABLE);
+			if (set_codec_for_pcm_modem)
+				set_codec_for_pcm_modem(BT);
 			DBG("modem_sound_ioctl: MODEM_BT_PHONE\n");
 			break;
 		case IOCTL_MODEM_STOP_PHONE:
-			//modem_sound_spkctl(DISABLE);
-			modem_io_ctl(CODEC_MODE);
-			mdelay(500);
 		  	DBG("modem_sound_ioctl: MODEM_STOP_PHONE\n");
+			if(set_codec_spk)
+				set_codec_spk(0);
+			if (set_codec_for_pcm_modem)
+				set_codec_for_pcm_modem(OFF);
 			break;
+	        case IOCTL_MODEM_HP_NOMIC_PHONE:
+			DBG("modem_sound_ioctl: MODEM_HP_NOMIC_PHONE\n");
+			if (set_codec_for_pcm_modem)
+				set_codec_for_pcm_modem(HP_NO_MIC);
+			if(set_codec_spk)
+				set_codec_spk(2);
+			modem_sound_spkctl(DISABLE);
+			break;
+
 
 		default:
 			printk("unknown ioctl cmd!\n");
