@@ -21,8 +21,6 @@
 #endif
 #define ENABLE             1
 #define DISABLE            0
-#define MODEM_MODE         0
-#define CODEC_MODE         1
 
 static struct modem_sound_data *modem_sound;
 int (*set_codec_for_pcm_modem)(int cmd) = NULL; /* Set the codec used only for PCM modem */
@@ -37,7 +35,7 @@ extern int set_es8323(int cmd);
 int modem_sound_spkctl(int status)
 {
 	if(modem_sound->spkctl_io == INVALID_GPIO)
-		return;
+		return 0;
 	if(status == ENABLE)
 		gpio_direction_output(modem_sound->spkctl_io,GPIO_HIGH);//modem_sound->spkctl_io? GPIO_HIGH:GPIO_LOW);
 	else 
@@ -45,21 +43,7 @@ int modem_sound_spkctl(int status)
 			
 	return 0;
 }
-static void modem_io_ctl(int status)
-{
-	if(modem_sound->modemctl_io == INVALID_GPIO)
-		return;
-	if(status == MODEM_MODE)
-	{
-		gpio_direction_output(modem_sound->modemctl_io,modem_sound->modemctl_active);
-		DBG("modem_io_ctl modem\n");
-	}
-	else if(status == CODEC_MODE)
-	{
-		gpio_direction_output(modem_sound->modemctl_io,!modem_sound->modemctl_active);
-		DBG("modem_io_ctl codec\n");
-	}
-}
+
 static void modem_sound_delay_power_downup(struct work_struct *work)
 {
 	struct modem_sound_data *pdata = container_of(work, struct modem_sound_data, work);
@@ -182,7 +166,7 @@ static int modem_sound_probe(struct platform_device *pdev)
 	struct modem_sound_data *pdata = pdev->dev.platform_data;
 	if(!pdata)
 		return -1;
-		
+
 	ret = misc_register(&modem_sound_dev);
 	if (ret < 0){
 		printk("modem register err!\n");
@@ -193,11 +177,13 @@ static int modem_sound_probe(struct platform_device *pdev)
 	pdata->wq = create_freezable_workqueue("modem_sound");
 	INIT_WORK(&pdata->work, modem_sound_delay_power_downup);
 	modem_sound = pdata;
-	if(pdata->modemctl_io != INVALID_GPIO)
-	{
-		if(pdata->modemctl_io_init())
-			pdata->modemctl_io_init();
-	}	
+#if defined(CONFIG_SND_RK_SOC_RK2928)|| defined(CONFIG_SND_RK29_SOC_RK610_PHONEPAD)
+        set_codec_spk = call_set_spk;
+#endif
+#ifdef CONFIG_SND_SOC_ES8323_PCM
+	set_codec_for_pcm_modem = set_es8323;
+#endif
+
 	printk("%s:modem sound initialized\n",__FUNCTION__);
 
 	return ret;

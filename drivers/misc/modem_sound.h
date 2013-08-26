@@ -34,10 +34,6 @@ struct modem_sound_data {
 	struct semaphore power_sem;
 	struct workqueue_struct *wq;
 	struct work_struct work;
-	int modemctl_io;
-	int modemctl_active;
-	int (*modemctl_io_init)(void);
-	
 };
 
 #endif
