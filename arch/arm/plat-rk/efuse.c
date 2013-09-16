@@ -102,6 +102,10 @@ int rk_pll_flag(void)
 {
 	return efuse_buf[22] & 0x3;
 }
+int rk_tflag(void)
+{
+	return efuse_buf[22] & (0x1 << 3);
+}
 
 int efuse_version_val(void)
 {
