@@ -300,10 +300,14 @@ static ssize_t video_state_write(struct file *file, const char __user *buffer,
 	uint32_t v_width=0,v_height=0,v_sync=0;
 	cookie_pot = buf;
 
-	if (count < 1) {
-                vfree(buf);
-		return count;
-        }
+	if(!buf)
+		return -ENOMEM;
+
+	if (count < 1){
+		vfree(buf);
+		return -EPERM;
+	}
+
 	if (copy_from_user(cookie_pot, buffer, count)) {
                 vfree(buf);
 		return -EFAULT;
