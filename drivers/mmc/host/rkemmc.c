@@ -571,6 +571,7 @@ static void rk_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 	WARN_ON(host->mrq);
 	WARN_ON(host->state != STATE_IDLE);
+	WARN_ON(host->shutdown == 1);
 
 	if(host->shutdown == 1){
 		cmd = mrq->sbc ? mrq->sbc : mrq->cmd;
