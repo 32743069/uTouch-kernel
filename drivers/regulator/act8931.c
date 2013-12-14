@@ -27,11 +27,12 @@
 #endif
   
 #if 0
-#define DBG(x...)	printk(KERN_INFO x)
+#define DBG(fmt,x...)  printk(fmt,##x)
 #else
 #define DBG(x...)
 #endif
-#if 1
+
+#if 0
 #define DBG_INFO(x...)	printk(KERN_INFO x)
 #else
 #define DBG_INFO(x...)
@@ -94,11 +95,17 @@ const static int buck_set_vol_base_addr[] = {
 	act8931_BUCK1_SET_VOL_BASE,
 	act8931_BUCK2_SET_VOL_BASE,
 	act8931_BUCK3_SET_VOL_BASE,
+#ifdef  CONFIG_ARCH_RK3026
+	act8931_BUCK3_SET_VOL_BASE,
+#endif
 };
 const static int buck_contr_base_addr[] = {
 	act8931_BUCK1_CONTR_BASE,
  	act8931_BUCK2_CONTR_BASE,
  	act8931_BUCK3_CONTR_BASE,
+#ifdef  CONFIG_ARCH_RK3026
+	act8931_BUCK3_CONTR_BASE,
+#endif
 };
 #define act8931_BUCK_SET_VOL_REG(x) (buck_set_vol_base_addr[x])
 #define act8931_BUCK_CONTR_REG(x) (buck_contr_base_addr[x])
@@ -383,6 +390,53 @@ static struct regulator_ops act8931_dcdc_ops = {
 	.get_mode = act8931_dcdc_get_mode,
 	.set_mode = act8931_dcdc_set_mode,
 };
+
+#ifdef  CONFIG_LOGIC_WITH_ARM
+static int  vcc_core_vol = 1200000;
+static int act8931_null_get_voltage(struct regulator_dev *dev)
+{
+	return vcc_core_vol;
+}
+static int act8931_null_set_voltage(struct regulator_dev *dev,
+				  int min_uV, int max_uV, unsigned *selector)
+{
+	struct act8931 *act8931 = rdev_get_drvdata(dev);
+	int buck = rdev_get_id(dev) -ACT8931_DCDC1 ;
+	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
+	const int *vol_map = buck_voltage_map;
+	u16 val;
+	int ret = 0;
+
+        DBG("%s, min_uV = %d, max_uV = %d!\n", __func__, min_uV, max_uV);
+	if (min_vol < vol_map[VOL_MIN_IDX] ||
+	    min_vol > vol_map[VOL_MAX_IDX])
+		return -EINVAL;
+
+	for (val = VOL_MIN_IDX; val <= VOL_MAX_IDX;
+	     val++){
+		if (vol_map[val] >= min_vol)
+			break;}
+
+	if (vol_map[val] < max_vol)
+		printk("WARNING:this voltage is not support!voltage set is %d mv\n",vol_map[val]);
+	
+	vcc_core_vol = vol_map[val];
+
+	return 1;	
+}
+static struct regulator_ops act8931_null_ops = { 
+	.set_voltage = act8931_null_set_voltage,
+	.get_voltage = act8931_null_get_voltage,
+	.list_voltage= act8931_dcdc_list_voltage,
+	.is_enabled = act8931_dcdc_is_enabled,
+	.enable = act8931_dcdc_enable,
+	.disable = act8931_dcdc_disable,
+	.get_mode = act8931_dcdc_get_mode,
+	.set_mode = act8931_dcdc_set_mode,
+};
+#endif
+
+
 static struct regulator_desc regulators[] = {
 	{
 		.name = "ACT_LDO1",
@@ -441,7 +495,16 @@ static struct regulator_desc regulators[] = {
 		.type = REGULATOR_VOLTAGE,
 		.owner = THIS_MODULE,
 	},
-	
+#ifdef  CONFIG_LOGIC_WITH_ARM
+	{
+		.name = "ACT_DCDC4",
+		.id = 7,
+		.ops = &act8931_null_ops,
+		.n_voltages = ARRAY_SIZE(buck_voltage_map),
+		.type = REGULATOR_VOLTAGE,
+		.owner = THIS_MODULE,
+	},
+#endif	
 };
 
 /*
@@ -474,7 +537,7 @@ static int act8931_i2c_read(struct i2c_client *i2c, char reg, int count,	u16 *de
     msgs[1].scl_rate = 200*1000;
     ret = i2c_transfer(adap, msgs, 2);
 
-	DBG("***run in %s %d msgs[1].buf = %d\n",__FUNCTION__,__LINE__,*(msgs[1].buf));
+	DBG("***run in %s reg=%x value = %x\n",__FUNCTION__,(unsigned int)reg,*(msgs[1].buf));
 
 	return 0;   
 }
@@ -601,8 +664,8 @@ static irqreturn_t act8931_irq_thread(unsigned int irq, void *dev_id)
 	val = act8931_reg_read(act8931,0x78);
 	act8931_charge_det = (val & INDAT_MASK )? 1:0;
 	act8931_charge_ok = (val & CHGDAT_MASK )? 1:0;
-	DBG(charge_det? "connect! " : "disconnect! ");
-	DBG(charge_ok? "charge ok! \n" : "charging or discharge! \n");
+        DBG(act8931_charge_det? "connect! " : "disconnect! ");
+        DBG(act8931_charge_ok? "charge ok!\n" : "charging or discharge!\n");
 
 	/* reset related regs according to spec */
 	ret = act8931_set_bits(act8931, 0x78, INSTAT_MASK | CHGSTAT_MASK, 
@@ -667,8 +730,9 @@ static int __devinit act8931_i2c_probe(struct i2c_client *i2c, const struct i2c_
 	val = act8931_reg_read(act8931,0x78);
 	act8931_charge_det = (val & INDAT_MASK )? 1:0;
 	act8931_charge_ok = (val & CHGDAT_MASK )? 1:0;
-	DBG(charge_det? "connect! " : "disconnect! ");
-	DBG(charge_ok? "charge ok! \n" : "charging or discharge! \n");
+        DBG(act8931_charge_det? "connect! " : "disconnect! ");
+        DBG(act8931_charge_ok? "charge ok!\n" : "charging or discharge!\n");
+
 	
 	ret = act8931_set_bits(act8931, 0x78, INSTAT_MASK | CHGSTAT_MASK, 
 			INSTAT_MASK | CHGSTAT_MASK);

@@ -1,0 +1,96 @@
+commit 1d8c0d45146622d5461d4cd96c5dfb78492bd418
+Author: gwl <gwl@rock-chips.com>
+Date:   Sat Oct 19 16:57:56 2013 +0800
+
+    Consummate bcm wifi oob on all platform(Wake gpio define).
+
+diff --git a/arch/arm/mach-rk30/board-rk3028-86v-sdmmc-conifg.c b/arch/arm/mach-rk30/board-rk3028-86v-sdmmc-conifg.c
+index 473d0ab..243de20 100755
+--- a/arch/arm/mach-rk30/board-rk3028-86v-sdmmc-conifg.c
++++ b/arch/arm/mach-rk30/board-rk3028-86v-sdmmc-conifg.c
+@@ -60,6 +60,10 @@ int rk31sdk_get_sdmmc0_pin_io_voltage(void)
+ #define RK29SDK_SD_CARD_DETECT_N                RK30_PIN3_PB0  //According to your own project to set the value of card-detect-pin.
+ #define RK29SDK_SD_CARD_INSERT_LEVEL            GPIO_LOW       // set the voltage of insert-card. Please pay attention to the default setting.
+ 
++//wake up host gpio
++#define RK30SDK_WIFI_GPIO_WIFI_INT_B                RK30_PIN3_PD2
++#define RK30SDK_WIFI_GPIO_WIFI_INT_B_ENABLE_VALUE   GPIO_HIGH
++
+ /*
+ * Define wifi module's power and reset gpio, and gpio sensitive level.
+ * Please set the value according to your own project.
+diff --git a/arch/arm/mach-rk30/board-rk3028-tb-sdmmc-conifg.c b/arch/arm/mach-rk30/board-rk3028-tb-sdmmc-conifg.c
+index 122cf0f..87b1ccf 100755
+--- a/arch/arm/mach-rk30/board-rk3028-tb-sdmmc-conifg.c
++++ b/arch/arm/mach-rk30/board-rk3028-tb-sdmmc-conifg.c
+@@ -60,6 +60,10 @@ int rk31sdk_get_sdmmc0_pin_io_voltage(void)
+ #define RK29SDK_SD_CARD_DETECT_N                RK30_PIN3_PB0  //According to your own project to set the value of card-detect-pin.
+ #define RK29SDK_SD_CARD_INSERT_LEVEL            GPIO_LOW       // set the voltage of insert-card. Please pay attention to the default setting.
+ 
++//wake up host gpio
++#define RK30SDK_WIFI_GPIO_WIFI_INT_B                RK30_PIN3_PD2
++#define RK30SDK_WIFI_GPIO_WIFI_INT_B_ENABLE_VALUE   GPIO_HIGH
++
+ /*
+ * Define wifi module's power and reset gpio, and gpio sensitive level.
+ * Please set the value according to your own project.
+diff --git a/arch/arm/mach-rk30/board-rk3168-86v-old-sdmmc-config.c b/arch/arm/mach-rk30/board-rk3168-86v-old-sdmmc-config.c
+index b873bba..bba4fb6 100755
+--- a/arch/arm/mach-rk30/board-rk3168-86v-old-sdmmc-config.c
++++ b/arch/arm/mach-rk30/board-rk3168-86v-old-sdmmc-config.c
+@@ -60,6 +60,10 @@ int rk31sdk_get_sdmmc0_pin_io_voltage(void)
+ #define RK29SDK_SD_CARD_DETECT_N                RK30_PIN3_PB0  //According to your own project to set the value of card-detect-pin.
+ #define RK29SDK_SD_CARD_INSERT_LEVEL            GPIO_LOW       // set the voltage of insert-card. Please pay attention to the default setting.
+ 
++//wake up host gpio
++#define RK30SDK_WIFI_GPIO_WIFI_INT_B                RK30_PIN3_PD2
++#define RK30SDK_WIFI_GPIO_WIFI_INT_B_ENABLE_VALUE   GPIO_HIGH
++
+ /*
+ * Define wifi module's power and reset gpio, and gpio sensitive level.
+ * Please set the value according to your own project.
+diff --git a/arch/arm/mach-rk30/board-rk3168-86v-sdmmc-config.c b/arch/arm/mach-rk30/board-rk3168-86v-sdmmc-config.c
+index f2ced62..635f3b0 100755
+--- a/arch/arm/mach-rk30/board-rk3168-86v-sdmmc-config.c
++++ b/arch/arm/mach-rk30/board-rk3168-86v-sdmmc-config.c
+@@ -60,6 +60,10 @@ int rk31sdk_get_sdmmc0_pin_io_voltage(void)
+ #define RK29SDK_SD_CARD_DETECT_N                RK30_PIN3_PB0  //According to your own project to set the value of card-detect-pin.
+ #define RK29SDK_SD_CARD_INSERT_LEVEL            GPIO_LOW       // set the voltage of insert-card. Please pay attention to the default setting.
+ 
++//wake up host gpio
++#define RK30SDK_WIFI_GPIO_WIFI_INT_B                RK30_PIN3_PD2
++#define RK30SDK_WIFI_GPIO_WIFI_INT_B_ENABLE_VALUE   GPIO_HIGH
++
+ /*
+ * Define wifi module's power and reset gpio, and gpio sensitive level.
+ * Please set the value according to your own project.
+diff --git a/arch/arm/mach-rk30/board-rk3168-tb-sdmmc-conifg.c b/arch/arm/mach-rk30/board-rk3168-tb-sdmmc-conifg.c
+index ae5af8f..7682444 100644
+--- a/arch/arm/mach-rk30/board-rk3168-tb-sdmmc-conifg.c
++++ b/arch/arm/mach-rk30/board-rk3168-tb-sdmmc-conifg.c
+@@ -60,6 +60,10 @@ int rk31sdk_get_sdmmc0_pin_io_voltage(void)
+ #define RK29SDK_SD_CARD_DETECT_N                RK30_PIN3_PB0  //According to your own project to set the value of card-detect-pin.
+ #define RK29SDK_SD_CARD_INSERT_LEVEL            GPIO_LOW       // set the voltage of insert-card. Please pay attention to the default setting.
+ 
++//wake up host gpio
++#define RK30SDK_WIFI_GPIO_WIFI_INT_B                RK30_PIN3_PD2
++#define RK30SDK_WIFI_GPIO_WIFI_INT_B_ENABLE_VALUE   GPIO_HIGH
++
+ /*
+ * Define wifi module's power and reset gpio, and gpio sensitive level.
+ * Please set the value according to your own project.
+diff --git a/arch/arm/mach-rk30/board-rk3168m-tb-sdmmc-conifg.c b/arch/arm/mach-rk30/board-rk3168m-tb-sdmmc-conifg.c
+index c1c03e0..77f0b26 100644
+--- a/arch/arm/mach-rk30/board-rk3168m-tb-sdmmc-conifg.c
++++ b/arch/arm/mach-rk30/board-rk3168m-tb-sdmmc-conifg.c
+@@ -60,6 +60,10 @@ int rk31sdk_get_sdmmc0_pin_io_voltage(void)
+ #define RK29SDK_SD_CARD_DETECT_N                RK30_PIN3_PB0  //According to your own project to set the value of card-detect-pin.
+ #define RK29SDK_SD_CARD_INSERT_LEVEL            GPIO_LOW       // set the voltage of insert-card. Please pay attention to the default setting.
+ 
++//wake up host gpio
++#define RK30SDK_WIFI_GPIO_WIFI_INT_B                RK30_PIN3_PD2
++#define RK30SDK_WIFI_GPIO_WIFI_INT_B_ENABLE_VALUE   GPIO_HIGH
++
+ /*
+ * Define wifi module's power and reset gpio, and gpio sensitive level.
+ * Please set the value according to your own project.

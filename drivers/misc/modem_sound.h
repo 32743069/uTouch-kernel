@@ -18,15 +18,6 @@
 #define IOCTL_SET_BT_VALUME      	    _IO(MODEM_SOUND, 0x14) 
 #define IOCTL_SET_HP_NOMIC_PHONE            _IO(MODEM_SOUND, 0x15)
 
-enum {
-	OFF,
-	RCV,
-	SPK_PATH,
-	HP_PATH,
-	HP_NO_MIC,
-	BT,
-};
-
 struct modem_sound_data {
 	int spkctl_io;
 	int spkctl_active;
@@ -34,6 +25,10 @@ struct modem_sound_data {
 	struct semaphore power_sem;
 	struct workqueue_struct *wq;
 	struct work_struct work;
+	int modemctl_io;
+	int modemctl_active;
+	int (*modemctl_io_init)(void);
+	
 };
 
 #endif

@@ -50,11 +50,6 @@
 #include <linux/mfd/ricoh619.h>
 #include <linux/regulator/rk29-pwm-regulator.h>
 #include <plat/efuse.h>
-#include <plat/ddr.h>
-
-#ifdef CONFIG_MFD_RT5025
-#include <linux/mfd/rt5025.h>
-#endif
 
 #ifdef CONFIG_CW2015_BATTERY
 #include <linux/power/cw2015_battery.h>
@@ -897,7 +892,6 @@ static struct platform_device irda_device = {
 
 #ifdef CONFIG_ION
 #define ION_RESERVE_SIZE        (80 * SZ_1M)
-#define ION_RESERVE_SIZE_120M   (120 * SZ_1M)
 static struct ion_platform_data rk30_ion_pdata = {
 	.nr = 1,
 	.heaps = {
@@ -905,7 +899,7 @@ static struct ion_platform_data rk30_ion_pdata = {
 			.type = ION_HEAP_TYPE_CARVEOUT,
 			.id = ION_NOR_HEAP_ID,
 			.name = "norheap",
-//			.size = ION_RESERVE_SIZE,
+			.size = ION_RESERVE_SIZE,
 		}
 	},
 };
@@ -2078,71 +2072,6 @@ static  struct pmu_info  ricoh619_ldo_info[] = {
 #include "board-pmu-ricoh619.c"
 #endif
 
-#ifdef CONFIG_MFD_RT5025
-#define RT5025_HOST_IRQ        RK30_PIN0_PB3
-
-static struct pmu_info  rt5025_dcdc_info[] = {
-	{
-		.name          = "vdd_cpu",   //arm
-		.min_uv          = 1000000,
-		.max_uv         = 1000000,
-	},
-	{
-		.name          = "vdd_core",    //logic
-		.min_uv          = 1000000,
-		.max_uv         = 1000000,
-	},
-	
-	{
-		.name          = "rt5025-dcdc3",   //vccio
-		.min_uv          = 3300000,
-		.max_uv         = 3300000,
-	},
-	
-	{
-		.name          = "rt5025-dcdc4",   //vccio
-		.min_uv         = 5000000,
-		.max_uv         = 5000000,
-	},
-	
-};
-static  struct pmu_info  rt5025_ldo_info[] = {
-	{
-		.name          = "rt5025-ldo1",   //vcc18
-		.min_uv          = 1800000,
-		.max_uv         = 1800000,
-	},
-	{
-		.name          = "rt5025-ldo2",    //vddjetta
-		.min_uv          = 1200000,
-		.max_uv         = 1200000,
-	},
-	{
-		.name          = "rt5025-ldo3",   //vdd10
-		.min_uv          = 1000000,
-		.max_uv         = 1000000,
-	},
-	{
-		.name          = "rt5025-ldo4",   //vccjetta
-		.min_uv          = 3300000,
-		.max_uv         = 3300000,
-	},
-	{
-		.name          = "rt5025-ldo5",   //vccio_wl
-		.min_uv          = 1800000,
-		.max_uv         = 1800000,
-	},
-	{
-		.name          = "rt5025-ldo6",   //vcc_tp
-		.min_uv          = 3300000,
-		.max_uv         = 3300000,
-	},	
-	
- };
-
-#include "board-pmu-rt5025.c"
-#endif
-
 
 
 static struct i2c_board_info __initdata i2c1_info[] = {
@@ -2191,16 +2120,6 @@ static struct i2c_board_info __initdata i2c1_info[] = {
 		.flags                  = 0,
 	       .irq            = RICOH619_HOST_IRQ,
 	       .platform_data=&ricoh619_data,
-	},
-#endif
-
-#if defined (CONFIG_MFD_RT5025)
-	{
-		.type                   = "RT5025",
-		.addr           = 0x35,
-		.flags                  = 0,
-	       .irq            = RT5025_HOST_IRQ,
-	       .platform_data=&rt5025_data,
 	},
 #endif
 
@@ -2512,15 +2431,6 @@ static void rk30_pm_power_off(void)
 	}
 	#endif
 
-	#if defined(CONFIG_MFD_RT5025) 
-	if(pmic_is_rt5025()){
-		if (rt5025_cable_exist())
-        		arm_pm_restart(0, "charge");
-		else
-			rt5025_power_off(); //rt5025 shutdown
-	}
-	#endif
-
 	gpio_direction_output(POWER_ON_PIN, GPIO_LOW);
 	while (1);
 }
@@ -2559,7 +2469,6 @@ static void __init machine_rk30_board_init(void)
 #define HD_SCREEN_SIZE 1920UL*1200UL*4*3
 static void __init rk30_reserve(void)
 {
-	int size, ion_reserve_size;
 #if defined(CONFIG_ARCH_RK3188)
 	/*if lcd resolution great than or equal to 1920*1200,reserve the ump memory */
 	if(!(get_fb_size() < ALIGN(HD_SCREEN_SIZE,SZ_1M)))
@@ -2570,18 +2479,7 @@ static void __init rk30_reserve(void)
 	}
 #endif
 #ifdef CONFIG_ION
-	size = ddr_get_cap() >> 20;
-	if(size >= 1024) { // DDR >= 1G, set ion to 120M
-		rk30_ion_pdata.heaps[0].size = ION_RESERVE_SIZE_120M;
-		ion_reserve_size = ION_RESERVE_SIZE_120M;
-	}
-	else {
-		rk30_ion_pdata.heaps[0].size = ION_RESERVE_SIZE;
-		ion_reserve_size = ION_RESERVE_SIZE;
-	}
-	printk("ddr size = %d M, set ion_reserve_size size to %d\n", size, ion_reserve_size);
-	//rk30_ion_pdata.heaps[0].base = board_mem_reserve_add("ion", ION_RESERVE_SIZE);
-	rk30_ion_pdata.heaps[0].base = board_mem_reserve_add("ion", ion_reserve_size);
+	rk30_ion_pdata.heaps[0].base = board_mem_reserve_add("ion", ION_RESERVE_SIZE);
 #endif
 #ifdef CONFIG_FB_ROCKCHIP
 	resource_fb[0].start = board_mem_reserve_add("fb0 buf", get_fb_size());

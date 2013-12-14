@@ -136,16 +136,72 @@ struct bp_operate bp_sc6610_ops = {
 	.bp_bus			= BP_BUS_TYPE_UART,		
 	.bp_pid			= 0,	
 	.bp_vid			= 0,	
-	.bp_power		= RK2928_PIN3_PC2, 	// 3g_power
+#if defined(CONFIG_GPIO_SN7325)
+	.bp_power		= SN7325_OD7, 	// 3g_power
 	.bp_en			= BP_UNKNOW_DATA,	// 3g_en
 	.bp_reset			= BP_UNKNOW_DATA,
 	.ap_ready		= BP_UNKNOW_DATA,	//
 	.bp_ready		= BP_UNKNOW_DATA,
-	.ap_wakeup_bp	= RK2928_PIN3_PC4,
-	.bp_wakeup_ap	= RK2928_PIN3_PC3,	//
+	.ap_wakeup_bp	= SN7325_OD3,
+	.bp_wakeup_ap	= SN7325_OD2,	//
 	.bp_uart_en		= BP_UNKNOW_DATA, 	//EINT9
 	.bp_usb_en		= BP_UNKNOW_DATA, 	//W_disable
-	.bp_assert		= RK2928_PIN3_PC5,
+	.bp_assert		= SN7325_PP3,
+#else
+        .bp_power               = RK2928_PIN3_PC2,      // 3g_power
+        .bp_en                  = BP_UNKNOW_DATA,       // 3g_en
+        .bp_reset                       = BP_UNKNOW_DATA,
+        .ap_ready               = BP_UNKNOW_DATA,       //
+        .bp_ready               = BP_UNKNOW_DATA,
+        .ap_wakeup_bp   = RK2928_PIN3_PC4,
+        .bp_wakeup_ap   = RK2928_PIN3_PC3,      //
+        .bp_uart_en             = BP_UNKNOW_DATA,       //EINT9
+        .bp_usb_en              = BP_UNKNOW_DATA,       //W_disable
+        .bp_assert              = RK2928_PIN3_PC5,
+#endif
+	.trig				= IRQF_TRIGGER_RISING,
+
+	.active			= bp_active,
+	.init				= bp_init,
+	.reset			= bp_reset,
+	.ap_wake_bp		= NULL,
+	.bp_wake_ap		= bp_wake_ap,
+	.shutdown		= bp_shutdown,
+	.read_status		= NULL,
+	.write_status		= NULL,
+	.suspend 		= bp_suspend,
+	.resume			= bp_resume,
+	.misc_name		= NULL,
+	.private_miscdev	= NULL,
+#elif defined(CONFIG_ARCH_RK3026)
+	.name			= "sc6610",
+	.bp_id			= BP_ID_SC6610,
+	.bp_bus			= BP_BUS_TYPE_UART,		
+	.bp_pid			= 0,	
+	.bp_vid			= 0,	
+#if defined(CONFIG_GPIO_SN7325)
+	.bp_power		= SN7325_OD7, 	// 3g_power
+	.bp_en			= BP_UNKNOW_DATA,	// 3g_en
+	.bp_reset			= BP_UNKNOW_DATA,
+	.ap_ready		= BP_UNKNOW_DATA,	//
+	.bp_ready		= BP_UNKNOW_DATA,
+	.ap_wakeup_bp	= SN7325_OD3,
+	.bp_wakeup_ap	= SN7325_OD2,	//
+	.bp_uart_en		= BP_UNKNOW_DATA, 	//EINT9
+	.bp_usb_en		= BP_UNKNOW_DATA, 	//W_disable
+	.bp_assert		= SN7325_PP3,
+#else
+	.bp_power		= RK2928_PIN3_PD6, 	// 3g_power
+	.bp_en			= BP_UNKNOW_DATA,	// 3g_en
+	.bp_reset			= BP_UNKNOW_DATA,
+	.ap_ready		= RK2928_PIN0_PD6,	//
+	.bp_ready		= RK2928_PIN3_PD5,
+	.ap_wakeup_bp	= RK2928_PIN1_PA4,
+	.bp_wakeup_ap	= RK2928_PIN1_PA2,	
+	.bp_uart_en		= BP_UNKNOW_DATA, 	//EINT9
+	.bp_usb_en		= BP_UNKNOW_DATA, 	//W_disable
+	.bp_assert		= BP_UNKNOW_DATA,
+#endif
 	.trig				= IRQF_TRIGGER_RISING,
 
 	.active			= bp_active,

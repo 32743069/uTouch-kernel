@@ -38,5 +38,8 @@ config LS_PHOTORESISTOR
 config LS_US5152
   bool "light sensor us5152"
         default n
+config LS_US5151
+  bool "light sensor us5151"
+        default n
 endif
 

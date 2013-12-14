@@ -259,7 +259,9 @@ int tps65910_post_init(struct tps65910 *tps65910)
 	printk("%s:g_pmic_type=%d\n",__func__,g_pmic_type);
 
 	#ifdef CONFIG_RK30_PWM_REGULATOR
+	#ifndef CONFIG_ARCH_RK3026
 	platform_device_register(&pwm_regulator_device[0]);
+	#endif
 	#endif
 	
 	dcdc = regulator_get(NULL, "vio");	//vcc_io

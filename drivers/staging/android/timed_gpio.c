@@ -25,7 +25,7 @@
 #include "timed_output.h"
 #include "timed_gpio.h"
 
-#define GPIO_TYPE   0 
+#define GPIO_TYPE   1
 
 struct timed_gpio_data {
 	struct timed_output_dev dev;
@@ -116,7 +116,6 @@ static int timed_gpio_probe(struct platform_device *pdev)
 	struct timed_gpio *cur_gpio;
 	struct timed_gpio_data *gpio_data, *gpio_dat;
 	int i, j, ret = 0;
-
 	if (!pdata)
 		return -EBUSY;
 
@@ -166,7 +165,6 @@ static int timed_gpio_probe(struct platform_device *pdev)
 
 	gpio_enable(&gpio_data ->dev, 100);
 	printk("%s\n",__FUNCTION__);
-
 	return 0;
 }
 
@@ -204,8 +202,11 @@ static void __exit timed_gpio_exit(void)
 {
 	platform_driver_unregister(&timed_gpio_driver);
 }
-
+#if (GPIO_TYPE == 1)
+module_init(timed_gpio_init);
+#else
 subsys_initcall(timed_gpio_init);
+#endif
 module_exit(timed_gpio_exit);
 
 MODULE_AUTHOR("Mike Lockwood <lockwood@android.com>");

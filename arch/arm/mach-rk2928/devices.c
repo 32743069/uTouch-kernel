@@ -663,7 +663,7 @@ static void __init rk2928_init_i2s(void)
 #endif
 	platform_device_register(&device_pcm);
 }
-#ifdef CONFIG_KEYS_RK29
+#if defined(CONFIG_KEYS_RK29) || defined(CONFIG_KEYS_RK_FOR_EXTENDGPIO)
 extern struct rk29_keys_platform_data rk29_keys_pdata;
 static struct platform_device device_keys = {
 	.name		= "rk29-keypad",
@@ -862,7 +862,7 @@ static int __init rk2928_init_devices(void)
 #ifdef CONFIG_ADC_RK30
 	platform_device_register(&device_adc);
 #endif
-#ifdef CONFIG_KEYS_RK29
+#if defined(CONFIG_KEYS_RK29) || defined(CONFIG_KEYS_RK_FOR_EXTENDGPIO)
 	platform_device_register(&device_keys);
 #endif
 #ifdef CONFIG_RGA_RK30

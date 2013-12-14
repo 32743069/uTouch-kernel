@@ -172,38 +172,6 @@ struct rk29_keys_platform_data rk29_keys_pdata = {
 	.chn	= 1,  //chn: 0-7, if do not use ADC,set 'chn' -1
 };
 
-#if defined (CONFIG_RK_HEADSET_DET) || defined (CONFIG_RK_HEADSET_IRQ_HOOK_ADC_DET)
-
-static int rk_headset_io_init(int gpio)
-{
-		int ret;
-		ret = gpio_request(gpio, "headset_input");
-		if(ret) 
-			return ret;
-
-		rk30_mux_api_set(GPIO0C7_TRACECTL_SMCADDR3_NAME, GPIO0C_GPIO0C7);
-		gpio_pull_updown(gpio, PullDisable);
-		gpio_direction_input(gpio);
-		mdelay(50);
-		return 0;
-};
-
-struct rk_headset_pdata rk_headset_info = {
-		.Headset_gpio		= RK30_PIN0_PC7,
-		.headset_in_type = HEADSET_IN_LOW,
-		.Hook_adc_chn = 2,
-		.hook_key_code = KEY_MEDIA,
-		.headset_io_init = rk_headset_io_init, 
-};
-
-struct platform_device rk_device_headset = {
-		.name	= "rk_headsetdet",
-		.id 	= 0,
-		.dev    = {
-			    .platform_data = &rk_headset_info,
-		}
-};
-#endif
 #if defined(CONFIG_TOUCHSCREEN_GT8XX)
 #define TOUCH_RESET_PIN  RK30_PIN4_PD0
 #define TOUCH_PWR_PIN    INVALID_GPIO
@@ -1443,7 +1411,7 @@ static struct platform_device device_rfkill_rk = {
 };
 #endif
 
-#if defined(CONFIG_MT5931_MT6622) || defined(CONFIG_MTK_MT6622)
+#if defined(CONFIG_MT5931_MT6622)
 static struct mt6622_platform_data mt6622_platdata = {
     .power_gpio         = { // BT_REG_ON
         .io             = RK30_PIN3_PC7, // set io to INVALID_GPIO for disable it
@@ -1521,7 +1489,7 @@ static struct platform_device *devices[] __initdata = {
 #ifdef CONFIG_RFKILL_RK
 	&device_rfkill_rk,
 #endif
-#if defined(CONFIG_MT5931_MT6622) || defined(CONFIG_MTK_MT6622)
+#ifdef CONFIG_MT5931_MT6622
 	&device_mt6622,
 #endif
 };
@@ -1881,9 +1849,6 @@ static void __init machine_rk30_board_init(void)
 
 #if defined(CONFIG_MT6620)
     clk_set_rate(clk_get_sys("rk_serial.0", "uart"), 48*1000000);
-#endif
-#if defined(CONFIG_MT5931_MT6622) || defined(CONFIG_MTK_MT6622)
-    clk_set_rate(clk_get_sys("rk_serial.0", "uart"), 24*1000000);
 #endif
 }
 

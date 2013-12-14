@@ -737,10 +737,7 @@ static int rk616_dither_cfg(struct mfd_rk616 *rk616,rk_screen *screen,bool enabl
 {
 	u32 val = 0;
 	int ret = 0;
-
-	if(screen->type != SCREEN_RGB) //if RGB screen , not invert D_CLK
-		val = FRC_DCLK_INV | (FRC_DCLK_INV << 16);
-	
+	val = FRC_DCLK_INV | (FRC_DCLK_INV << 16);
 	if((screen->face != OUT_P888) && enable)  //enable frc dither if the screen is not 24bit
 		val |= FRC_DITHER_EN | (FRC_DITHER_EN << 16);
 		//val |= (FRC_DITHER_EN << 16);
@@ -760,15 +757,8 @@ int rk616_display_router_cfg(struct mfd_rk616 *rk616,rk_screen *screen,bool enab
 	if(ret < 0)
 		return ret;
 	ret = rk616_router_cfg(rk616);
-	
-	/*
-		If wake up, does not execute the rk616_vif_cfg can save 50ms time
-	*/
-	if(rk616->resume != 1){
-		ret = rk616_vif_cfg(rk616,hdmi_screen,0);
-		ret = rk616_vif_cfg(rk616,hdmi_screen,1);
-	}
-
+	ret = rk616_vif_cfg(rk616,hdmi_screen,0);
+	ret = rk616_vif_cfg(rk616,hdmi_screen,1);
 	ret = rk616_scaler_cfg(rk616,screen);			
 	ret = rk616_dither_cfg(rk616,screen,enable);
 	return 0;

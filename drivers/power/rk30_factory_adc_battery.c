@@ -480,7 +480,7 @@ static int  get_usb_status2(struct rk30_adc_battery_data *bat){
 			}else{
 				usb_status = 1;	// connect to pc	
 				if(bat ->pdata ->control_usb_charging)
-					bat ->pdata ->control_usb_charging(0);
+					bat ->pdata ->control_usb_charging(1);
 			}
 		}else{
 				
@@ -520,15 +520,28 @@ static int rk_battery_get_status(struct rk30_adc_battery_data *bat)
 		charge_on = 1;
 #endif
 
-#if  defined (CONFIG_BATTERY_RK30_USB_CHARGE)	
 		if (strstr(saved_command_line,"charger")){
 			wake_lock(&charge_display_lock);  //lock
+#if  defined (CONFIG_BATTERY_RK30_USB_CHARGE)	
 			if( bat->pdata->usb_det_pin  != INVALID_GPIO ){
 				if( gpio_get_value(bat->pdata->usb_det_pin)== bat->pdata->usb_det_level){
-					if(( 1 == usb_ac_charging )||( 1 == ac_ac_charging ))
+					if(( 1 == bat ->ac_charging /*usb_ac_charging*/ )||( 1 == ac_ac_charging ))
+					{
 						bat -> ac_charging = 1;
+                                                if(bat -> pdata ->control_usb_charging)
+                                                        bat -> pdata ->control_usb_charging(1);
+
+					}
+					if( 1 == bat->usb_charging)
+					{
+                                                if(bat -> pdata ->control_usb_charging)
+                                                        bat -> pdata ->control_usb_charging(0);
+
+					}
 					if(( 1 == bat->usb_charging)||(1 == bat ->ac_charging))
 						charge_on =1;
+					else
+						charge_on = 0;
 					return charge_on;
 				}else{
 					if(( 0 == usb_ac_charging )&&( 0 == ac_ac_charging ))
@@ -567,12 +580,15 @@ static int rk_battery_get_status(struct rk30_adc_battery_data *bat)
 					charge_on = 0;
 					bat->bat_change = 1;
 				}
+				else
+					charge_on = 1;
 
 				return charge_on;
 
 			}
+#endif
 		}
-
+#if  defined (CONFIG_BATTERY_RK30_USB_CHARGE)	
 		if (charge_on == 0){
 			usb_ac_charging = get_usb_status2(bat); //0 --discharge, 1---usb charging,2----AC charging;
 			if(1 == usb_ac_charging)
@@ -746,11 +762,11 @@ static int rk_adc_voltage(struct rk30_adc_battery_data *bat, int value)
 	pulldown_res = bat ->pdata->pull_down_res;
 
 	if(ref_voltage && pullup_res && pulldown_res){
-#if defined(CONFIG_ARCH_RK2928) || defined(CONFIG_ARCH_RK3026)
-		ref_voltage = adc_get_curr_ref_volt();
-#endif	
+//#if defined(CONFIG_ARCH_RK2928) || defined(CONFIG_ARCH_RK3026)
+		//ref_voltage = adc_get_curr_ref_volt();
+//#endif	
 		voltage =  ((value * ref_voltage * (pullup_res + pulldown_res)) / (1024 * pulldown_res));
-		DBG("ref_voltage =%d, voltage=%d \n", ref_voltage,voltage);
+		DBG("VALUE = %d,ref_voltage =%d, voltage=%d \n", value,ref_voltage,voltage);
 		
 	}else{
 #if 0
@@ -1278,7 +1294,7 @@ static void rk30_adc_battery_capacity_samples(struct rk30_adc_battery_data *bat)
 {
 //	int capacity = 0;
 //	int timer_of_charge_sample = NUM_CHARGE_MIN_SAMPLE;
-//	int timer_of_discharge_sample = NUM_CHARGE_MIN_SAMPLE;
+	int timer_of_discharge_sample = NUM_CHARGE_MIN_SAMPLE;
 
 	if (bat->bat_status_cnt < NUM_VOLTAGE_SAMPLE)  {
 		bat->gBatCapacityDisChargeCnt = 0;
@@ -1289,10 +1305,10 @@ static void rk30_adc_battery_capacity_samples(struct rk30_adc_battery_data *bat)
 	
 	if(1 == bat->charge_level){
 #if  defined (CONFIG_BATTERY_RK30_USB_CHARGE)	
-		if(1 == bat->usb_charging)
+		//if(1 == bat->usb_charging)
 			rk_usb_charger(bat);
-		else
-			rk_ac_charger(bat);
+		//else
+		//	rk_ac_charger(bat);
 #else
 		rk_ac_charger(bat);
 #endif
@@ -1488,7 +1504,7 @@ static int rk30_adc_battery_get_health(struct rk30_adc_battery_data *bat)
 
 static int rk30_adc_battery_get_present(struct rk30_adc_battery_data *bat)
 {
-	return 1;//(bat->bat_voltage < BATT_MAX_VOL_VALUE) ? 0 : 1;
+	return (bat->bat_voltage < BATT_MAX_VOL_VALUE) ? 0 : 1;
 }
 
 static int rk30_adc_battery_get_voltage(struct rk30_adc_battery_data *bat)
@@ -2360,7 +2376,11 @@ static void __exit rk30_adc_battery_exit(void)
 	platform_driver_unregister(&rk30_adc_battery_driver);
 }
 //module_init(rk30_adc_battery_init);//module_init(rk30_adc_battery_init);//
+#if defined(CONFIG_MACH_RK3026_PHONEPAD_780)
+fs_initcall(rk30_adc_battery_init); 
+#else
 subsys_initcall(rk30_adc_battery_init);
+#endif
 //fs_initcall(rk30_adc_battery_init);
 module_exit(rk30_adc_battery_exit);
 

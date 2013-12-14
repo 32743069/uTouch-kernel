@@ -21,7 +21,7 @@
 
 #define PWM_DIV              PWM_DIV2
 
-
+#define PWM_NULL             0xff
 struct regulator_init_data;
 
 struct pwm_platform_data {

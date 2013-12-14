@@ -34,6 +34,23 @@ Comprehensive camera device registration:
                           
 */
 static struct rkcamera_platform_data new_camera[] = { 
+#if defined(CONFIG_MACH_RK3026_PHONEPAD_780)
+	    new_camera_device(RK29_CAM_SENSOR_GC2035,
+			                        back,
+			                        0,
+			                        0,
+			                        0,
+			                        1,
+			                        0),
+    new_camera_device(RK29_CAM_SENSOR_GC0308,
+		                        front,
+		                        RK30_PIN3_PB3,
+		                        0,
+		                        0,
+		                        1,
+		                        0), 
+    new_camera_device_end
+#else
 
  /*   new_camera_device(RK29_CAM_SENSOR_OV2659,
                         front,
@@ -59,6 +76,7 @@ static struct rkcamera_platform_data new_camera[] = {
                         0), 
         */                
     new_camera_device_end
+#endif
 };
 /*---------------- Camera Sensor Macro Define Begin  ------------------------*/
 /*---------------- Camera Sensor Configuration Macro Begin ------------------------*/
@@ -218,7 +236,11 @@ static struct rkcamera_platform_data new_camera[] = {
 #define CONFIG_SENSOR_POWERDOWN_IOCTL_USR	   0
 #define CONFIG_SENSOR_FLASH_IOCTL_USR	   0
 #else
+#if defined(CONFIG_MACH_RK3026_PHONEPAD_780)
+#define CAMERA_NAME                        "gc2035_back_3"
+#else
 #define CAMERA_NAME                        "gc0308_back_4"
+#endif
 #define CONFIG_SENSOR_POWER_IOCTL_USR	   1 //define this refer to your board layout
 #define CONFIG_SENSOR_RESET_IOCTL_USR	   0
 #define CONFIG_SENSOR_POWERDOWN_IOCTL_USR  1 	    
@@ -230,22 +252,56 @@ static struct rkcamera_platform_data new_camera[] = {
 static void rk_cif_power(int on)
 {
     struct regulator *ldo_18,*ldo_28;
-    #if 0
-	ldo_28 = regulator_get(NULL, "ldo7");	// vcc28_cif
-	ldo_18 = regulator_get(NULL, "ldo1");	// vcc18_cif
-    #else
-    	ldo_28 = regulator_get(NULL, "vaux1");   // vcc28_cif
-  	ldo_18 = regulator_get(NULL, "vdig1");   // vcc18_cif
-    #endif
+
+#if  defined(CONFIG_PWM_CONTROL_LOGIC) && defined(CONFIG_PWM_CONTROL_ARM)
+#else
+#if defined(CONFIG_MFD_TPS65910)
+	if(pmic_is_tps65910())
+	{
+	    ldo_28 = regulator_get(NULL, "vaux1");   // vcc28_cif
+	    ldo_18 = regulator_get(NULL, "vdig1");   // vcc18_cif
+	}
+#endif
+	
+#if  defined(CONFIG_KP_AXP20)
+	if(pmic_is_axp202())
+	{
+	   ldo_28 = regulator_get(NULL, "ldo2");   // vcc28_cif
+	   ldo_18 = regulator_get(NULL, "ldo3");   // vcc18_cif
+	}
+#endif
+
+#if  defined(CONFIG_KP_AXP19)
+	if(pmic_is_axp202())
+	{
+	   ldo_28 = regulator_get(NULL, "ldoio0");   // vcc28_cif
+	   ldo_18 = ldo_28;
+	}
+#endif
+
+#if  defined(CONFIG_REGULATOR_ACT8931)
+	if(pmic_is_act8931())
+	{
+	   ldo_28 = regulator_get(NULL, "act_ldo1");   // vcc28_cif
+	   ldo_18 = regulator_get(NULL, "act_ldo2");   // vcc18_cif
+	}
+#endif
+#endif
+
 	if (ldo_28 == NULL || IS_ERR(ldo_28) || ldo_18 == NULL || IS_ERR(ldo_18)){
-        printk("get cif ldo failed!\n");
+     	   printk("get cif ldo failed!\n");
 		return;
 	    }
-    if(on == 0){	
-    	regulator_disable(ldo_28);
-    	regulator_put(ldo_28);
-    	regulator_disable(ldo_18);
-    	regulator_put(ldo_18);
+    if(on == 0){
+			while(regulator_is_enabled(ldo_28))	
+    			regulator_disable(ldo_28);
+    			regulator_put(ldo_28);
+
+#ifndef CONFIG_KP_AXP19
+			while(regulator_is_enabled(ldo_18))	
+	    		regulator_disable(ldo_18);
+    			regulator_put(ldo_18);
+#endif
     	mdelay(500);
         }
     else{
@@ -254,11 +310,13 @@ static void rk_cif_power(int on)
    // 	printk("%s set ldo7 vcc28_cif=%dmV end\n", __func__, regulator_get_voltage(ldo_28));
     	regulator_put(ldo_28);
 
+#ifndef CONFIG_KP_AXP19
     	regulator_set_voltage(ldo_18, 1800000, 1800000);
     //	regulator_set_suspend_voltage(ldo, 1800000);
     	regulator_enable(ldo_18);
     //	printk("%s set ldo1 vcc18_cif=%dmV end\n", __func__, regulator_get_voltage(ldo_18));
     	regulator_put(ldo_18);
+#endif
         }
 }
 
@@ -267,13 +325,40 @@ static int sensor_power_usr_cb (struct rk29camera_gpio_res *res,int on)
 {
 	    //#error "CONFIG_SENSOR_POWER_IOCTL_USR is 1, sensor_power_usr_cb function must be writed!!";
 	struct regulator *ldo_18,*ldo_28;
-	
-#if 0
-	    ldo_28 = regulator_get(NULL, "ldo7");   // vcc28_cif
-	    ldo_18 = regulator_get(NULL, "ldo1");   // vcc18_cif
+
+#if  defined(CONFIG_PWM_CONTROL_LOGIC) && defined(CONFIG_PWM_CONTROL_ARM)
 #else
+#if defined(CONFIG_MFD_TPS65910)
+	if(pmic_is_tps65910())
+	{
 	    ldo_28 = regulator_get(NULL, "vaux1");   // vcc28_cif
 	    ldo_18 = regulator_get(NULL, "vdig1");   // vcc18_cif
+	}
+#endif
+
+#if  defined(CONFIG_KP_AXP20)
+	if(pmic_is_axp202())
+	{
+	   ldo_28 = regulator_get(NULL, "ldo2");   // vcc28_cif
+	   ldo_18 = regulator_get(NULL, "ldo3");   // vcc18_cif
+	}
+#endif
+
+#if  defined(CONFIG_KP_AXP19)
+	if(pmic_is_axp202())
+	{
+	   ldo_28 = regulator_get(NULL, "ldoio0");   // vcc28_cif
+	   ldo_18 = ldo_28;
+	}
+#endif
+
+#if  defined(CONFIG_REGULATOR_ACT8931)
+	if(pmic_is_act8931())
+	{
+	   ldo_28 = regulator_get(NULL, "act_ldo1");   // vcc28_cif
+	   ldo_18 = regulator_get(NULL, "act_ldo2");   // vcc18_cif
+	}
+#endif
 #endif
 
 	if (ldo_28 == NULL || IS_ERR(ldo_28) || ldo_18 == NULL || IS_ERR(ldo_18)){
@@ -284,21 +369,26 @@ static int sensor_power_usr_cb (struct rk29camera_gpio_res *res,int on)
 	    while(regulator_is_enabled(ldo_28)>0)   
 		regulator_disable(ldo_28);
 	    regulator_put(ldo_28);
+
+#ifndef CONFIG_KP_AXP19
 	    while(regulator_is_enabled(ldo_18)>0)
 		regulator_disable(ldo_18);
 	    regulator_put(ldo_18);
+#endif
+
 	    mdelay(10);
 	} else {
 	    regulator_set_voltage(ldo_28, 2800000, 2800000);
 	    regulator_enable(ldo_28);
 	    //printk("%s set ldo7 vcc28_cif=%dmV end\n", __func__, regulator_get_voltage(ldo_28));
 	    regulator_put(ldo_28);
-	
+#ifndef CONFIG_KP_AXP19	
 	    regulator_set_voltage(ldo_18, 1800000, 1800000);
 	    //regulator_set_suspend_voltage(ldo, 1800000);
 	    regulator_enable(ldo_18);
 	    //printk("%s set ldo1 vcc18_cif=%dmV end\n", __func__, regulator_get_voltage(ldo_18));
 	    regulator_put(ldo_18);
+#endif
 	}
 	
 	return 0;
@@ -368,11 +458,11 @@ int camera_powerdown = res->gpio_powerdown;
     printk("hjc:%s,%s,on=%d\n\n\n",__func__,res->dev_name,on);
     if(strcmp(res->dev_name,CAMERA_NAME)==0)//"gc0308_front_3") == 0)
     { 
-        //如果为pmu控制的引脚，"ov5642_front_1" 根据 sensor名字 ，前后置 ， sensor序号确定 
-        //具体pmu控制操作，可参考文件末尾的参考代码 
+        //\C8\E7\B9\FB为pmu\BF\D8\D6频\C4\D2\FD\BD牛\AC"ov5642_front_1" \B8\F9\BE\DD sensor\C3\FB\D7\D6 \A3\AC前\BA\F3\D6\C3 \A3\AC sensor\D0\F2\BA\C5确\B6\A8 
+        //\BE\DF\CC\E5pmu\BF\D8\D6撇\D9\D7\F7\A3\AC\BF刹慰\BC\CE募\FE末尾\B5牟慰\BC\B4\FA\C2\EB 
         //printk("\n\n%s.............pwm power,on=%d\n",__FUNCTION__,on);
         rk_cif_powerdowen(on);
-    }else{ //gpio控制的操作
+    }else{ //gpio\BF\D8\D6频牟\D9\D7\F7
          //   int camera_powerdown = res->gpio_powerdown;
             int camera_ioflag = res->gpio_flag;
             int camera_io_init = res->gpio_init; //  int ret = 0;    

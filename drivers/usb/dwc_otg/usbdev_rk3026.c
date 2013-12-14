@@ -109,7 +109,7 @@ void usb20otg_hw_init(void)
 #ifdef CONFIG_RK_CONFIG
     otg_drv_init(0);
 #else
-#if(defined (CONFIG_MACH_RK3026_86V) ||defined (CONFIG_MACH_RK3026_86V_FAC))
+#if defined(CONFIG_MACH_RK3026_86V) || defined(CONFIG_MACH_RK3026_PHONEPAD_780) || defined (CONFIG_MACH_RK3026_86V_FAC)
 
 #else
     iomux_set(OTG_DRV_VBUS);

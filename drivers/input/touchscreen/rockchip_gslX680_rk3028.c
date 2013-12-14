@@ -908,7 +908,10 @@ error_alloc_dev:
 static void set_tp_power(bool flag)
 {
 	 struct regulator *ldo=NULL;
+#if  defined(CONFIG_PWM_CONTROL_LOGIC) || defined(CONFIG_PWM_CONTROL_ARM)
+#else
 	 ldo = regulator_get(NULL, "vaux33");
+
 	 
 	 if(ldo==NULL){
 	 	 printk("set_tp_power ldo is null\n");
@@ -923,6 +926,7 @@ static void set_tp_power(bool flag)
 	 	  regulator_disable(ldo);
     	regulator_put(ldo);
 	 }
+#endif
 }
 #endif
 

@@ -11,6 +11,13 @@ config MACH_RK3026_TB
 config MACH_RK3026_86V
 	bool "RK3026 86V Board"
 
+config MACH_RK3026_PHONEPAD_780
+    bool "RK3026 phonepad 780 Board"
+
+config MACH_RK3026_86V_FAC
+    bool "RK3026 86V Board for factory"
+    select MACH_RK_FAC
+
 config MACH_RK3028A_TB
 	bool "RK3028A Top Board"
 
@@ -20,9 +27,7 @@ config MACH_RK3028A_86V
 config MACH_RK3028A_FAC
   bool "RK3028A Board for factory"
   select MACH_RK_FAC
-  
-config MACH_RK3026_86V_FAC
-  bool "RK3026 86V Board for factory"
-  select MACH_RK_FAC
 
+config MACH_RK3028A_PHONEPAD_780
+  bool "RK3028A Phonepad 780 Board"
 endchoice

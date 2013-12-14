@@ -747,7 +747,7 @@ static int rk2928_pm_enter(suspend_state_t state)
 	RK_SOC_PM_CTR_FUN(NO_PLL, rk_pm_soc_pll_suspend);
 
 	sram_printch('3');
-	//RK_SOC_PM_CTR_FUN(NO_VOLT,rk30_pwm_suspend_voltage_set);
+	RK_SOC_PM_CTR_FUN(NO_VOLT,rk30_pwm_suspend_voltage_set);
 	RK_SOC_PM_CTR_FUN(NO_GPIO, board_gpio_suspend);
 
 	interface_ctr_reg_pread();
@@ -759,7 +759,7 @@ static int rk2928_pm_enter(suspend_state_t state)
 
 	sram_printch('4');
 	RK_SOC_PM_CTR_FUN(NO_GPIO, board_gpio_resume);
-	//RK_SOC_PM_CTR_FUN(NO_VOLT,rk30_pwm_resume_voltage_set);
+	RK_SOC_PM_CTR_FUN(NO_VOLT,rk30_pwm_resume_voltage_set);
 
 	sram_printch('3');
 	RK_SOC_PM_CTR_FUN(NO_PLL, rk_pm_soc_pll_resume);

@@ -31,6 +31,7 @@
 #include <linux/sensor-dev.h>
 #include <linux/mfd/tps65910.h>
 #include <linux/regulator/act8846.h>
+#include <linux/regulator/act8931.h>
 #include <linux/regulator/rk29-pwm-regulator.h>
 
 #include <asm/setup.h>
@@ -46,6 +47,8 @@
 #include <mach/io.h>
 #include <mach/gpio.h>
 #include <mach/iomux.h>
+
+#include <plat/board.h>
 
 #include <plat/efuse.h>
 
@@ -65,7 +68,6 @@
 #include "../../../drivers/misc/gps/rk_gps/rk_gps.h"
 #endif
 #include "board-rk3026-86v-camera.c"
-
 /***********************************************************
 *	board config
 ************************************************************/
@@ -112,7 +114,13 @@
 #define PLAY_ON_PIN		RK30_PIN1_PA4	//wakeup key		
 
 //pwm regulator
-#define REG_PWM			1  // (0 ~ 2)
+#ifdef CONFIG_PWM_LOGIC_WITH_ARM
+#define REG_PWM_LOGIC			PWM_NULL // (0 ~ 2)
+#define REG_PWM_ARM			1 // (0 ~ 2)
+#else
+#define REG_PWM_LOGIC			1 // (0 ~ 2)
+#define REG_PWM_ARM			0 // (0 ~ 2)
+#endif
 
 //pmic
 #define PMU_INT_PIN		RK30_PIN1_PB1
@@ -744,6 +752,11 @@ static void rkusb_wifi_power(int on) {
 	int ret=0;
 	struct regulator *ldo = NULL;
 	printk("hjc:%s[%d],on=%d\n",__func__,__LINE__,on);
+
+#if  defined(CONFIG_PWM_CONTROL_LOGIC) && defined(CONFIG_PWM_CONTROL_ARM)
+
+#else
+
 #if defined(CONFIG_MFD_TPS65910)	
 	if (pmic_is_tps65910())
 		ldo = regulator_get(NULL, "vmmc");  //vccio_wl
@@ -753,8 +766,20 @@ static void rkusb_wifi_power(int on) {
 		ldo = regulator_get(NULL, "act_ldo4");  //vccio_wl
 #endif	
 	
-	if(!on) {
+#if defined(CONFIG_KP_AXP)
+	if(pmic_is_axp202())
+		ldo = regulator_get(NULL, "ldo3");  //vccio_wl
+#endif
+
+	if (ldo == NULL)
+	{
+		printk("\n\n\n%s get ldo error,please mod this\n\n\n");
 		
+	}
+	else
+	{
+
+		if(!on) {
 		regulator_set_voltage(ldo, 3000000, 3000000);
 		ret = regulator_enable(ldo);
 		if(ret != 0){
@@ -770,6 +795,8 @@ static void rkusb_wifi_power(int on) {
 	}	
 	regulator_put(ldo);
 	udelay(100);
+	}
+#endif
 }
 
 #endif
@@ -927,14 +954,19 @@ struct rk29_sdmmc_platform_data default_sdmmc1_data = {
 
 #ifdef CONFIG_BATTERY_RK30_ADC_FAC
 
+#if  defined(CONFIG_PWM_CONTROL_LOGIC) && defined(CONFIG_PWM_CONTROL_ARM)
+#define DC_DET_PIN RK30_PIN1_PB1
+#else
 #define DC_DET_PIN RK30_PIN1_PA5
+#endif
+
 #define CHARGE_OK_PIN   INVALID_GPIO//RK30_PIN0_PC6
 
 static int rk30_adc_battery_io_init(void){
 	//dc charge detect pin
 	int ret=0;
 	if (DC_DET_PIN != INVALID_GPIO){
-	    	ret = gpio_request(RK30_PIN1_PA5, NULL);
+	    	ret = gpio_request(DC_DET_PIN, NULL);
 	    	if (ret) {
 	    		printk("failed to request dc_det gpio\n");
 	    	}
@@ -974,7 +1006,7 @@ static int rk30_adc_battery_io_init(void){
 }
 
 static struct rk30_adc_battery_platform_data rk30_adc_battery_platdata = {
-        .dc_det_pin      = RK30_PIN1_PA5,
+        .dc_det_pin      = DC_DET_PIN,
         .batt_low_pin    = INVALID_GPIO, 
         .charge_set_pin  = INVALID_GPIO,
         .charge_ok_pin   = INVALID_GPIO,//RK30_PIN1_PA0,
@@ -1101,16 +1133,37 @@ static int pwm_voltage_map[] = {
 	800000,  825000,  850000,  875000,  900000,  925000 ,
 	950000,  975000,  1000000, 1025000, 1050000, 1075000, 
 	1100000, 1125000, 1150000, 1175000, 1200000, 1225000, 
-	1250000, 1275000, 1300000, 1325000, 1350000, 1375000
+	1250000, 1275000, 1300000, 1325000, 1350000, 1375000,
+	1400000
 };
 
+
+
 static struct regulator_consumer_supply pwm_dcdc1_consumers[] = {
+#ifdef CONFIG_PWM_LOGIC_WITH_ARM
+	{
+		.supply = "vdd_cpu",
+	}
+#else
 	{
 		.supply = "vdd_core",
 	}
+#endif
 };
 
-struct regulator_init_data pwm_regulator_init_dcdc[1] = {
+static struct regulator_consumer_supply pwm_dcdc2_consumers[] = {
+#ifdef CONFIG_PWM_LOGIC_WITH_ARM
+	{
+		.supply = "vdd_core",
+	}
+#else
+	{
+		.supply = "vdd_cpu",
+	}
+#endif
+};
+
+struct regulator_init_data pwm_regulator_init_dcdc[2] = {
 	{
 		.constraints = {
 			.name = "PWM_DCDC1",
@@ -1122,21 +1175,55 @@ struct regulator_init_data pwm_regulator_init_dcdc[1] = {
 		.num_consumer_supplies = ARRAY_SIZE(pwm_dcdc1_consumers),
 		.consumer_supplies = pwm_dcdc1_consumers,
 	},
+	{
+		.constraints = {
+			.name = "PWM_DCDC2",
+			.min_uV = 600000,
+			.max_uV = 1800000,      //0.6-1.8V
+			.apply_uV = true,
+			.valid_ops_mask = REGULATOR_CHANGE_STATUS | REGULATOR_CHANGE_VOLTAGE,
+		},
+		.num_consumer_supplies = ARRAY_SIZE(pwm_dcdc2_consumers),
+		.consumer_supplies = pwm_dcdc2_consumers,
+	},
 };
 
-static struct pwm_platform_data pwm_regulator_info[1] = {
+static struct pwm_platform_data pwm_regulator_info[2] = {
 	{
-		.pwm_id = REG_PWM,
+#ifdef CONFIG_PWM_LOGIC_WITH_ARM
+		.pwm_id = REG_PWM_ARM,
+#else
+		.pwm_id = REG_PWM_LOGIC,
+#endif
 		.pwm_voltage = 1200000,
 		.suspend_voltage = 1050000,
-		.min_uV = 950000,
+#ifdef CONFIG_PWM_LOGIC_WITH_ARM
+		.min_uV = 900000,
 		.max_uV = 1400000,
-		.coefficient = 504,     //50.4%
+#else
+		.min_uV = 800000,
+		.max_uV = 1375000,
+#endif
+		.coefficient = 480,     //50.4%
 		.pwm_voltage_map = pwm_voltage_map,
 		.init_data      = &pwm_regulator_init_dcdc[0],
 	},
+	{
+#ifdef CONFIG_PWM_LOGIC_WITH_ARM
+		.pwm_id = REG_PWM_LOGIC,
+#else
+		.pwm_id = REG_PWM_ARM,
+#endif
+		.pwm_voltage = 1200000,
+		.suspend_voltage = 1050000,
+		.min_uV = 900000,
+		.max_uV = 1400000,
+		.coefficient = 480,     //50.4%
+		.pwm_voltage_map = pwm_voltage_map,
+		.init_data      = &pwm_regulator_init_dcdc[1],
+	},
 };
-struct platform_device pwm_regulator_device[1] = {
+struct platform_device pwm_regulator_device[2] = {
 	{
 		.name = "pwm-voltage-regulator",
 		.id = 0,
@@ -1144,56 +1231,101 @@ struct platform_device pwm_regulator_device[1] = {
 			.platform_data = &pwm_regulator_info[0],
 		}
 	},
+	{
+		.name = "pwm-voltage-regulator",
+		.id = 1,
+		.dev            = {
+			.platform_data = &pwm_regulator_info[1],
+		}
+	},
 };
 
 static void pwm_regulator_init(void)
 {
-	pwm_regulator_info[0].pwm_gpio = iomux_mode_to_gpio(pwm_mode[REG_PWM]);
-	pwm_regulator_info[0].pwm_iomux_pwm = pwm_mode[REG_PWM];
-	pwm_regulator_info[0].pwm_iomux_gpio = iomux_switch_gpio_mode(pwm_mode[REG_PWM]);
+#ifdef CONFIG_PWM_LOGIC_WITH_ARM
+	pwm_regulator_info[0].pwm_gpio = iomux_mode_to_gpio(pwm_mode[REG_PWM_ARM]);;
+	pwm_regulator_info[0].pwm_iomux_pwm = pwm_mode[REG_PWM_ARM];
+	pwm_regulator_info[0].pwm_iomux_gpio = iomux_switch_gpio_mode(pwm_mode[REG_PWM_ARM]);
+#else
+	pwm_regulator_info[0].pwm_gpio = iomux_mode_to_gpio(pwm_mode[REG_PWM_LOGIC]);;
+	pwm_regulator_info[0].pwm_iomux_pwm = pwm_mode[REG_PWM_LOGIC];
+	pwm_regulator_info[0].pwm_iomux_gpio = iomux_switch_gpio_mode(pwm_mode[REG_PWM_LOGIC]);
+#endif
+#ifdef CONFIG_PWM_CONTROL_ARM
+	pwm_regulator_info[1].pwm_gpio = iomux_mode_to_gpio(pwm_mode[REG_PWM_ARM]);
+	pwm_regulator_info[1].pwm_iomux_pwm = pwm_mode[REG_PWM_ARM];
+	pwm_regulator_info[1].pwm_iomux_gpio = iomux_switch_gpio_mode(pwm_mode[REG_PWM_ARM]);
+#endif
 }
 #endif
 
-int __sramdata pwm_iomux, pwm_do, pwm_dir, pwm_en;
+int __sramdata pwm_iomux_logic, pwm_do_logic, pwm_dir_logic, pwm_en_logic;
+int __sramdata pwm_iomux_arm, pwm_do_arm, pwm_dir_arm, pwm_en_arm;
 #define grf_readl(offset)       readl_relaxed(RK30_GRF_BASE + offset)
 #define grf_writel(v, offset)   do { writel_relaxed(v, RK30_GRF_BASE + offset); dsb(); } while (0)
 
-#define GPIO0_D2_OFFSET		10
+#define gpio_readl(offset)       readl_relaxed(RK2928_GPIO0_BASE + offset)
+#define gpio_writel(v, offset)   do { writel_relaxed(v, RK2928_GPIO0_BASE + offset); dsb(); } while (0)
+
+#define GPIO_DIR 0x04
+#define GPIO_D0  0x00
+
+#define GPIO0_D2_OFFSET		20
 void __sramfunc rk30_pwm_logic_suspend_voltage(void)
 {
-#ifdef CONFIG_RK30_PWM_REGULATOR
-	#if 0
 	/* pwm0: GPIO0_D2, pwm1: GPIO0_D3, pwm2: GPIO0_D4 */
-	int off = GPIO0_D2_OFFSET + REG_PWM;
-
 	sram_udelay(10000);
-	pwm_iomux = grf_readl(GRF_GPIO0D_IOMUX);
-	pwm_dir = grf_readl(GRF_GPIO0H_DIR);
-	pwm_do = grf_readl(GRF_GPIO0H_DO);
-	pwm__en = grf_readl(GRF_GPIO0H_EN);
 
-	grf_writel((1<<(2 * off), GRF_GPIO0D_IOMUX);
-	grf_writel((1<<(16 + off))|(1<<off), GRF_GPIO0H_DIR);
-	grf_writel((1<<(16 + off))|(1<<off), GRF_GPIO0H_DO);
-	#endif
+#ifdef CONFIG_PWM_CONTROL_LOGIC
+#ifdef CONFIG_PWM_LOGIC_WITH_ARM	
+	int off = GPIO0_D2_OFFSET + 2*REG_PWM_ARM;
+#else
+	int off = GPIO0_D2_OFFSET + 2*REG_PWM_LOGIC;
+#endif
+	pwm_iomux_logic = grf_readl(GRF_GPIO0D_IOMUX);
+	pwm_dir_logic = gpio_readl(GPIO_DIR);
+	pwm_do_logic = gpio_readl(GPIO_D0);
+
+	grf_writel(1<<off, GRF_GPIO0D_IOMUX);
+	gpio_writel(pwm_dir_logic | 0x08000000, GPIO_DIR);
+	gpio_writel(pwm_do_logic | 0x08000000, GPIO_D0); 	
+#endif
+
+#ifdef CONFIG_PWM_CONTROL_ARM
+        off = GPIO0_D2_OFFSET + 2*REG_PWM_ARM;
+
+	pwm_iomux_arm = grf_readl(GRF_GPIO0D_IOMUX);
+	pwm_dir_arm = gpio_readl(GPIO_DIR);
+	pwm_do_arm = gpio_readl(GPIO_D0);
+
+	grf_writel(1<<off, GRF_GPIO0D_IOMUX);
+	gpio_writel(pwm_dir_arm | 0x04000000, GPIO_DIR);
+	gpio_writel(pwm_do_arm | 0x04000000, GPIO_D0);	
 #endif
 }
 
 void __sramfunc rk30_pwm_logic_resume_voltage(void)
 {
-#ifdef CONFIG_RK30_PWM_REGULATOR
-	#if 0
 	/* pwm0: GPIO0_D2, pwm1: GPIO0_D3, pwm2: GPIO0_D4 */
-	int off = GPIO0_D2_OFFSET + REG_PWM;
 
-	grf_writel((1<<(2 * off))|pwm_iomux, GRF_GPIO0D_IOMUX);
-	grf_writel(((1<<(16 + off))|pwm_dir), GRF_GPIO0L_DIR);
-	grf_writel(((1<<(16 + off))|pwm_do), GRF_GPIO0L_DO);
-	grf_writel(((1<<(16 + off))|pwm_en), GRF_GPIO0L_EN);
+#ifdef CONFIG_PWM_CONTROL_LOGIC
+	int off = GPIO0_D2_OFFSET + 2*REG_PWM_LOGIC;
+	grf_writel((1<<off)|pwm_iomux_logic, GRF_GPIO0D_IOMUX);
+	gpio_writel(pwm_dir_logic, GPIO_DIR);
+	gpio_writel(pwm_do_logic, GPIO_D0);
 	sram_udelay(10000);
-	#endif
+	
+#endif
+#ifdef CONFIG_PWM_CONTROL_ARM
+	off = GPIO0_D2_OFFSET + 2*REG_PWM_ARM;
+
+	grf_writel((1<<off)|pwm_iomux_arm, GRF_GPIO0D_IOMUX);
+	gpio_writel(pwm_dir_arm, GPIO_DIR);
+	gpio_writel(pwm_do_arm, GPIO_D0);
+	sram_udelay(10000);
 #endif
 }
+
 extern void pwm_suspend_voltage(void);
 extern void pwm_resume_voltage(void);
 
@@ -1327,15 +1459,12 @@ void board_gpio_suspend(void)
 //	lcd_gpio = grf_readl(0x0cc);
 	grf_writel(0xffffffff, 0x0118);
 	grf_writel(0xffffffff, 0x011c);
-	grf_writel(0xffffffff, 0x0120);
+	grf_writel(0xfffffdff, 0x0120);
 	grf_writel(0xffffffff, 0x0124);
 	grf_writel(0xff7fff7f, 0x0128);
 	grf_writel(0xffffffff, 0x012c);
 	grf_writel(0xfefffeff, 0x0130);
 	grf_writel(0xffffffff, 0x0134);
-
-
-
 	
 	sram_printch('9');
 
@@ -1598,6 +1727,60 @@ struct aw5x0x_platform_data  aw5x0x_info = {
 /***********************************************************
 *	i2c
 ************************************************************/
+#ifdef CONFIG_KP_AXP
+#include "../../../drivers/power/axp_power/axp-board.h"
+#endif
+
+#ifdef CONFIG_REGULATOR_ACT8931
+#define ACT8931_HOST_IRQ		RK30_PIN1_PB1//depend on your hardware
+
+
+#define ACT8931_CHGSEL_PIN    INVALID_GPIO //RK30_PIN0_PD0 //depend on your hardware
+
+
+static struct pmu_info  act8931_dcdc_info[] = {
+	{
+		.name          = "act_dcdc1",   //vdd_io
+		.min_uv          = 3300000,
+		.max_uv         = 3300000,
+	},
+	{
+		.name          = "act_dcdc2",    //ddr
+		.min_uv          = 1500000,
+		.max_uv         = 1500000,
+	},
+	{
+		.name          = "vdd_cpu",   //vdd_arm
+		.min_uv          = 1200000,
+		.max_uv         = 1200000,
+	},
+};
+static  struct pmu_info  act8931_ldo_info[] = {
+	{
+		.name          = "act_ldo1",   //vcc28_cif
+		.min_uv          = 2800000,
+		.max_uv         = 2800000,
+	},
+	{
+		.name          = "act_ldo2",    //vcc18_cif
+		.min_uv          = 1800000,
+		.max_uv         = 1800000,
+	},
+	{
+		.name          = "act_ldo3",    //vcca30
+		.min_uv          = 3000000,
+		.max_uv         = 3000000,
+	},
+	{
+		.name          = "act_ldo4",    //vcc_wl
+		.min_uv          = 3300000,
+		.max_uv         = 3300000,
+	},
+};
+#include "../mach-rk2928/board-rk2928-sdk-act8931.c"
+#endif
+
+
 #ifdef CONFIG_I2C0_RK30
 static struct i2c_board_info __initdata i2c0_info[] = {
 #if defined (CONFIG_MFD_TPS65910)
@@ -1609,8 +1792,42 @@ static struct i2c_board_info __initdata i2c0_info[] = {
 		.platform_data = &tps65910_data,
 	},
 #endif
-
+#if defined (CONFIG_RTC_HYM8563)
+    {    
+        .type           = "rtc_hym8563",
+        .addr           = 0x51,
+        .flags          = 0, 
+        .irq            = RK30_PIN1_PA5,
+    },   
+#endif
+#ifdef  CONFIG_KP_AXP19
+	{
+		.type = "axp_mfd",
+		.addr = 0x34,
+		.flags  = 0,		
+		.irq =RK30_PIN1_PB1,
+		.platform_data = &axp_pdata,
+	},
+#endif
+#if defined (CONFIG_REGULATOR_ACT8931)
+	{
+		.type    		= "act8931",
+		.addr           = 0x5b, 
+		.flags			= 0,
+		.irq            = ACT8931_HOST_IRQ,
+		.platform_data=&act8931_data,
+	},
+#endif
 };
+#endif
+#if defined(CONFIG_TOUCHSCREEN_ZET62XX)
+        {
+                .type          = "zet6221-ts",
+                .addr          = 0x76,
+                .flags         = 0,
+                .irq           = TS_INT_GPIO,
+                .platform_data = &zet62xx_info,
+        },
 #endif
 
 #ifdef CONFIG_I2C1_RK30
@@ -1623,6 +1840,15 @@ static struct i2c_board_info __initdata i2c1_info[] = {
                 .irq            = MXC6225_INT_PIN,
                 .platform_data  = &mxc6225_info,
         },
+#endif
+#ifdef  CONFIG_KP_AXP20
+	{
+		.type = "axp_mfd",
+		.addr = 0x34,
+		.flags  = 0,		
+		.irq =RK30_PIN1_PB1,
+		.platform_data = &axp_pdata,
+	},
 #endif
 #if defined (CONFIG_GS_MMA7660)
 	{
@@ -1690,6 +1916,14 @@ static struct i2c_board_info __initdata i2c1_info[] = {
 	},
 #endif
 
+#if defined (CONFIG_TOUCHSCREEN_AW5209)
+    {
+        .type           = "aw5306_ts",
+        .addr           = 0x38,
+        .flags          = 0,
+        .platform_data  = &aw5x0x_info,
+    },
+#endif
 };
 #endif
 
@@ -1710,24 +1944,6 @@ static struct i2c_board_info __initdata i2c2_info[] = {
         .addr           = 0x40,
         .flags          = 0,
         .platform_data =&gslx680_info,
-    },
-#endif
-#if defined(CONFIG_TOUCHSCREEN_ZET62XX)
-        {
-                .type          = "zet6221-ts",
-                .addr          = 0x76,
-                .flags         = 0,
-                .irq           = TS_INT_GPIO,
-                .platform_data = &zet62xx_info,
-        },
-#endif
-
-#if defined (CONFIG_TOUCHSCREEN_AW5209)
-    {
-        .type           = "aw5306_ts",
-        .addr           = 0x38,
-        .flags          = 0,
-        .platform_data  = &aw5x0x_info,
     },
 #endif
 };
@@ -1800,13 +2016,46 @@ static struct platform_device *devices[] __initdata = {
 #ifdef CONFIG_GPS_RK
 	&rk_device_gps,
 #endif
+
+#ifdef CONFIG_PWM_CONTROL_LOGIC
+	&pwm_regulator_device[0],
+#endif
+
+#if defined(CONFIG_PWM_CONTROL_ARM) || defined(CONFIG_PWM_LOGIC_WITH_ARM)
+	&pwm_regulator_device[1],
+#endif
+
 };
+
+#if  defined(CONFIG_KP_AXP)
+extern  void axp_power_off(void);
+#endif
 
 static void rk30_pm_power_off(void)
 {
 #if defined(CONFIG_MFD_TPS65910)
-	tps65910_device_shutdown();//tps65910 shutdown
+	if(pmic_is_tps65910())
+		tps65910_device_shutdown();//tps65910 shutdown
 #endif
+
+#if  defined(CONFIG_KP_AXP)
+	if(pmic_is_axp202())
+		axp_power_off();
+
+#endif
+
+#if defined(CONFIG_REGULATOR_ACT8931)
+	if(pmic_is_act8931()){
+		 printk("enter dcdet pmic_is_act8931===========\n");
+               if(gpio_get_value (RK30_PIN0_PB2) == GPIO_LOW)
+               {
+                       printk("enter restart===========\n");
+                       arm_pm_restart(0, "charge");
+               }
+              act8931_device_shutdown();
+	}
+#endif
+
 	gpio_direction_output(POWER_ON_PIN, GPIO_LOW);
 	while(1);
 }
@@ -1863,11 +2112,11 @@ static void __init rk30_reserve(void)
 /***********************************************************
 *	clock
 ************************************************************/
-static struct cpufreq_frequency_table dvfs_arm_table_v0[] = {
-	{.frequency = 312 * 1000,       .index = 1200 * 1000},
-	{.frequency = 504 * 1000,       .index = 1200 * 1000},
-	{.frequency = 816 * 1000,       .index = 1250 * 1000},
-	{.frequency = 912 * 1000,       .index = 1350 * 1000},
+static struct cpufreq_frequency_table dvfs_arm_table[] = {
+	{.frequency = 312 * 1000,       .index = 950 * 1000},
+	{.frequency = 504 * 1000,       .index = 1000 * 1000},
+	{.frequency = 816 * 1000,       .index = 1200 * 1000},
+	{.frequency = 912 * 1000,       .index = 1250 * 1000},
 	{.frequency = 1008 * 1000,      .index = 1350 * 1000},
 	//{.frequency = 1200 * 1000,      .index = 1200 * 1000},
 	//{.frequency = 1416 * 1000,      .index = 1200 * 1000},
@@ -1875,48 +2124,28 @@ static struct cpufreq_frequency_table dvfs_arm_table_v0[] = {
 	{.frequency = CPUFREQ_TABLE_END},
 };
 
-static struct cpufreq_frequency_table dvfs_arm_table_v1[] = {
-	{.frequency = 312 * 1000,       .index = 1200 * 1000},
-	{.frequency = 504 * 1000,       .index = 1200 * 1000},
-	{.frequency = 816 * 1000,       .index = 1275 * 1000},
-	{.frequency = 912 * 1000,       .index = 1350 * 1000},
-	{.frequency = 1008 * 1000,      .index = 1400 * 1000},
-	//{.frequency = 1200 * 1000,      .index = 1200 * 1000},
-	//{.frequency = 1416 * 1000,      .index = 1200 * 1000},
-	//{.frequency = 1608 * 1000,      .index = 1200 * 1000},
-	{.frequency = CPUFREQ_TABLE_END},
-};
-
 static struct cpufreq_frequency_table dvfs_gpu_table[] = {
-	{.frequency = 100 * 1000,       .index = 1250 * 1000},
-	{.frequency = 200 * 1000,       .index = 1250 * 1000},
-	{.frequency = 266 * 1000,       .index = 1250 * 1000},
-	{.frequency = 300 * 1000,       .index = 1250 * 1000},
-	{.frequency = 400 * 1000,       .index = 1250 * 1000},
+	{.frequency = 200 * 1000,       .index = 1050 * 1000},
+	{.frequency = 266 * 1000,       .index = 1050 * 1000},
+	{.frequency = 400 * 1000,       .index = 1050 * 1000},
 	{.frequency = CPUFREQ_TABLE_END},
 };
 
 static struct cpufreq_frequency_table dvfs_ddr_table[] = {
-	{.frequency = 200 * 1000 + DDR_FREQ_SUSPEND,    .index = 1200 * 1000},
-	{.frequency = 300 * 1000,                       .index = 1200 * 1000},
-	{.frequency = 400 * 1000 + DDR_FREQ_NORMAL,     .index = 1200 * 1000},
+	{.frequency = 200 * 1000 + DDR_FREQ_SUSPEND,    .index = 1050 * 1000},
+	{.frequency = 300 * 1000 + DDR_FREQ_VIDEO,      .index = 1050 * 1000},
+	{.frequency = 400 * 1000 + DDR_FREQ_NORMAL,     .index = 1050 * 1000},
 	{.frequency = CPUFREQ_TABLE_END},
 };
 
-#define RK3026_SOC_V0 0x00
-#define RK3026_SOC_V1 0x01
-
+extern void adjust_dvfs_table(int soc_version, struct cpufreq_frequency_table *table);
 void __init board_clock_init(void)
 {
 	rk2928_clock_data_init(periph_pll_default, codec_pll_default, RK30_CLOCKS_DEFAULT_FLAGS);
 	//dvfs_set_arm_logic_volt(dvfs_cpu_logic_table, cpu_dvfs_table, dep_cpu2core_table);	
-
 	printk(KERN_INFO "rk3026 soc version:%d\n", rk3026_version_val());
-	if (rk3026_version_val() == RK3026_SOC_V1)
-		dvfs_set_freq_volt_table(clk_get(NULL, "cpu"), dvfs_arm_table_v1);
-	else
-		dvfs_set_freq_volt_table(clk_get(NULL, "cpu"), dvfs_arm_table_v0);
-
+	adjust_dvfs_table(rk3026_version_val(), dvfs_arm_table);
+	dvfs_set_freq_volt_table(clk_get(NULL, "cpu"), dvfs_arm_table);
 	dvfs_set_freq_volt_table(clk_get(NULL, "gpu"), dvfs_gpu_table);
 	dvfs_set_freq_volt_table(clk_get(NULL, "ddr"), dvfs_ddr_table);
 }

@@ -24,10 +24,6 @@ static int act8931_set_init(struct act8931 *act8931)
 	g_pmic_type = PMIC_TYPE_ACT8931;
 #endif
 	printk("%s:g_pmic_type=%d\n",__func__,g_pmic_type);
-
-	#ifdef CONFIG_RK30_PWM_REGULATOR
-	platform_device_register(&pwm_regulator_device[0]);
-	#endif
 	
 	for(i = 0; i < ARRAY_SIZE(act8931_dcdc_info); i++)
 	{
@@ -78,6 +74,14 @@ static struct regulator_consumer_supply act8931_buck3_supply[] = {
 		.supply = "vdd_cpu",
 	},
 };
+
+#ifdef  LOGIC_WITH_ARM
+static struct regulator_consumer_supply act8931_buck4_supply[] = {
+	{
+		.supply = "vdd_core",
+	},
+};
+#endif
 
 static struct regulator_consumer_supply act8931_ldo1_supply[] = {
 	{
@@ -147,6 +151,23 @@ static struct regulator_init_data act8931_buck3 = {
 	.num_consumer_supplies = ARRAY_SIZE(act8931_buck3_supply),
 	.consumer_supplies =  act8931_buck3_supply,
 };
+
+#ifdef  LOGIC_WITH_ARM
+static struct regulator_init_data act8931_buck4 = {
+	.constraints = {
+		.name           = "ACT_DCDC3",
+		.min_uV			= 600000,
+		.max_uV			= 3900000,
+		.apply_uV		= 1,
+		.always_on = 1,
+		.valid_ops_mask = REGULATOR_CHANGE_STATUS | REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_MODE,
+		.valid_modes_mask = REGULATOR_MODE_STANDBY | REGULATOR_MODE_NORMAL,
+
+	},
+	.num_consumer_supplies = ARRAY_SIZE(act8931_buck4_supply),
+	.consumer_supplies =  act8931_buck4_supply,
+};
+#endif
 
 static struct regulator_init_data act8931_ldo1 = {
 	.constraints = {
@@ -245,12 +266,21 @@ static struct act8931_regulator_subdev act8931_regulator_subdev_id[] = {
 		.id=6,
 		.initdata=&act8931_buck3,		
 	 },
-
+#ifdef  LOGIC_WITH_ARM
+	{
+		.id=7,
+		.initdata=&act8931_buck4,		
+	 },
+#endif
 };
 
 static struct act8931_platform_data act8931_data={
 	.set_init=act8931_set_init,
+#ifdef  LOGIC_WITH_ARM
+	.num_regulators=8,
+#else
 	.num_regulators=7,
+#endif
 	.regulators=act8931_regulator_subdev_id,
 };
 

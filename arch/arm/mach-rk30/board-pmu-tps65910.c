@@ -280,7 +280,9 @@ int tps65910_post_init(struct tps65910 *tps65910)
 	printk("%s:g_pmic_type=%d\n",__func__,g_pmic_type);
 
 	#ifdef CONFIG_RK30_PWM_REGULATOR
+	#ifndef CONFIG_ARCH_RK3026	
 	platform_device_register(&pwm_regulator_device[0]);
+	#endif
 	#endif
 
 	for(i = 0; i < ARRAY_SIZE(tps65910_dcdc_info); i++)
@@ -331,7 +333,7 @@ static struct regulator_consumer_supply tps65910_smps2_supply[] = {
 	{
                 .supply = "vdd_cpu",
         },
-        #elif (defined(CONFIG_MACH_RK3026_86V)||defined(CONFIG_MACH_RK3026_86V_FAC))
+    #elif defined(CONFIG_MACH_RK3026_86V) || defined(CONFIG_MACH_RK3026_PHONEPAD_780) || defined(CONFIG_MACH_RK3026_86V_FAC) || defined(CONFIG_MACH_RK3028A_PHONEPAD_780)
 	{
 		.supply = "vdd_core",
 	},

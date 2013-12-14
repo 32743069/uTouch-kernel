@@ -6,24 +6,26 @@
 #include <mach/gpio.h>
 #include <mach/iomux.h>
 #include <linux/i2c.h>
-#include <linux/uaccess.h>
-#if defined(CONFIG_DEBUG_FS)
-#include <linux/fs.h>
-#include <linux/debugfs.h>
-#include <linux/seq_file.h>
-#endif
-
 #include "cat66121_hdmi.h"
 #include "cat66121_hdmi_hw.h"
 
-#define HDMI_POLL_MDELAY 	50//100
 struct cat66121_hdmi_pdata *cat66121_hdmi = NULL;
 struct hdmi *hdmi=NULL;
 
 extern struct rk_lcdc_device_driver * rk_get_lcdc_drv(char *name);
 extern void hdmi_register_display_sysfs(struct hdmi *hdmi, struct device *parent);
 extern void hdmi_unregister_display_sysfs(struct hdmi *hdmi);
+static void check_status_func(struct work_struct *work);
 static void cat66121_irq_work_func(struct work_struct *work);
+static DECLARE_DELAYED_WORK(check_status_work,check_status_func);
+
+static void check_status_func(struct work_struct *work)
+{
+	if(HDMITX_ReadI2C_Byte(REG_TX_SYS_STATUS) & B_TX_INT_ACTIVE){
+		cat66121_irq_work_func(NULL);
+	}
+	schedule_delayed_work(&check_status_work, msecs_to_jiffies(5000));
+}
 #if 0
 int cat66121_hdmi_register_hdcp_callbacks(void (*hdcp_cb)(void),
 					 void (*hdcp_irq_cb)(int status),
@@ -50,8 +52,10 @@ static void hdmi_early_suspend(struct early_suspend *h)
 		return;
 	}
 	
-	if(hdmi->irq != INVALID_GPIO)
+	#ifdef HDMI_USE_IRQ
+	if(hdmi->irq)
 		disable_irq(hdmi->irq);
+	#endif
 	
 	mutex_unlock(&hdmi->enable_mutex);
 	hdmi->command = HDMI_CONFIG_ENABLE;
@@ -61,6 +65,7 @@ static void hdmi_early_suspend(struct early_suspend *h)
 	wait_for_completion_interruptible_timeout(&hdmi->complete,
 							msecs_to_jiffies(5000));
 	flush_delayed_work(&hdmi->delay_work);
+	cancel_delayed_work_sync(&check_status_work);
 	return;
 }
 
@@ -70,12 +75,15 @@ static void hdmi_early_resume(struct early_suspend *h)
 	mutex_lock(&hdmi->enable_mutex);
 	
 	hdmi->suspend = 0;
-	if(hdmi->irq == INVALID_GPIO){
-		queue_delayed_work(cat66121_hdmi->workqueue, &cat66121_hdmi->delay_work, HDMI_POLL_MDELAY);
-	}else if(hdmi->enable){
+	#ifdef HDMI_USE_IRQ
+	if(hdmi->enable && hdmi->irq) {
 		enable_irq(hdmi->irq);
 	}
+	#else
+	queue_delayed_work(cat66121_hdmi->workqueue, &cat66121_hdmi->delay_work, 100);
+	#endif
 	queue_delayed_work(hdmi->workqueue, &hdmi->delay_work, msecs_to_jiffies(10));	
+	schedule_delayed_work(&check_status_work, msecs_to_jiffies(5000));
 	mutex_unlock(&hdmi->enable_mutex);
 	return;
 }
@@ -89,21 +97,21 @@ static void cat66121_irq_work_func(struct work_struct *work)
 			if(hdmi->hdcp_irq_cb)
 				hdmi->hdcp_irq_cb(0);
 		}
-		if(hdmi->irq == INVALID_GPIO){
-			queue_delayed_work(cat66121_hdmi->workqueue, &cat66121_hdmi->delay_work, HDMI_POLL_MDELAY);
-		}
+		#ifndef HDMI_USE_IRQ
+		queue_delayed_work(cat66121_hdmi->workqueue, &cat66121_hdmi->delay_work, 100);
+		#endif
 	}
 }
 
-static irqreturn_t cat66121_thread_interrupt(int irq, void *dev_id)
+#ifdef HDMI_USE_IRQ
+static irqreturn_t cat66121_irq(int irq, void *dev_id)
 {
-	cat66121_irq_work_func(NULL);
-	msleep(HDMI_POLL_MDELAY);
-	hdmi_dbg(hdmi->dev, "%s irq=%d\n", __func__,irq);
-	return IRQ_HANDLED;
+	printk(KERN_INFO "cat66121 irq triggered.\n");
+	schedule_work(&cat66121_hdmi->irq_work);
+    return IRQ_HANDLED;
 }
-
-#if defined(CONFIG_DEBUG_FS)
+#endif
+#ifdef HDMI_DEBUG
 static int hdmi_read_p0_reg(struct i2c_client *client, char reg, char *val)
 {
 	return i2c_master_reg8_recv(client, reg, val, 1, 100*1000) > 0? 0: -EINVAL;
@@ -113,10 +121,12 @@ static int hdmi_write_p0_reg(struct i2c_client *client, char reg, char *val)
 {
 	return i2c_master_reg8_send(client, reg, val, 1, 100*1000) > 0? 0: -EINVAL;
 }
-static int hdmi_reg_show(struct seq_file *s, void *v)
+static ssize_t hdmi_show_reg_attrs(struct device *dev,
+					      struct device_attribute *attr,
+					      char *buf)
 {
 
-	int i;
+	int i,size=0;
 	char val;
 	struct i2c_client *client=cat66121_hdmi->client;
 
@@ -124,54 +134,41 @@ static int hdmi_reg_show(struct seq_file *s, void *v)
 	{
 		hdmi_read_p0_reg(client, i,  &val);
 		if(i%16==0)
-			seq_printf(s,"\n>>>hdmi_hdmi %x:",i);
-		seq_printf(s," %2x",val);
+			size += sprintf(buf+size,"\n>>>hdmi_hdmi %x:",i);
+		size += sprintf(buf+size," %2x",val);
 	}
-	seq_printf(s,"\n");
 
-	return 0;
+	return size;
 }
-
-static ssize_t hdmi_reg_write (struct file *file, const char __user *buf, size_t count, loff_t *ppos)
-{ 
-	struct i2c_client *client=NULL;
-	u32 reg,val;
-	char kbuf[25];
-	client = cat66121_hdmi->client;
-	
-	if (copy_from_user(kbuf, buf, count))
-		return -EFAULT;
-	sscanf(kbuf, "%x%x", &reg,&val);
-	hdmi_write_p0_reg(client, reg,  (u8*)&val);
-
-	return count;
-}
-
-static int hdmi_reg_open(struct inode *inode, struct file *file)
+static ssize_t hdmi_store_reg_attrs(struct device *dev,
+						struct device_attribute *attr,
+			 			const char *buf, size_t size)
 {
-	return single_open(file,hdmi_reg_show,hdmi);
+	struct i2c_client *client=NULL;
+	static char val=0,reg=0;
+	client = cat66121_hdmi->client;
+	printk("/**********hdmi reg config******/");
+
+	sscanf(buf, "%x%x", &val,&reg);
+	hdmi_write_p0_reg(client, reg,  &val);
+	return size;
 }
 
-static const struct file_operations hdmi_reg_fops = {
-	.owner		= THIS_MODULE,
-	.open		= hdmi_reg_open,
-	.read		= seq_read,
-	.write          = hdmi_reg_write,
-	.llseek		= seq_lseek,
-	.release	= single_release,
+static struct device_attribute hdmi_attrs[] = {
+	__ATTR(reg_ctl, 0777,hdmi_show_reg_attrs,hdmi_store_reg_attrs),
 };
 #endif
 static int cat66121_hdmi_i2c_probe(struct i2c_client *client,const struct i2c_device_id *id)
 {
-	int rc = 0;
+    int rc = 0;
 	struct rk_hdmi_platform_data *pdata = client->dev.platform_data;
 	
 	cat66121_hdmi = kzalloc(sizeof(struct cat66121_hdmi_pdata), GFP_KERNEL);
 	if(!cat66121_hdmi)
 	{
-		dev_err(&client->dev, "no memory for state\n");
-		return -ENOMEM;
-	}
+        dev_err(&client->dev, "no memory for state\n");
+    	return -ENOMEM;
+    }
 	cat66121_hdmi->client = client;
 	i2c_set_clientdata(client, cat66121_hdmi);
 	
@@ -200,26 +197,11 @@ static int cat66121_hdmi_i2c_probe(struct i2c_client *client,const struct i2c_de
 			goto err_request_lcdc;
 		}
 	}
-
 	if(cat66121_detect_device()!=1){
-		dev_err(hdmi->dev, "can't find it66121 device \n");
+		dev_err(hdmi->dev, "can't find it6610 device \n");
 		rc = -ENXIO;
 		goto err_request_lcdc;
 	}
-
-	if(client->irq == 0){
-		dev_err(hdmi->dev, "can't find it66121 irq\n");
-			dev_err(hdmi->dev, " please set irq or use irq INVALID_GPIO for poll mode\n");
-		rc = -ENXIO;
-		goto err_request_lcdc;
-	}
-
-        cat66121_hdmi->plug_status = -1;
-#ifdef SUPPORT_HDCP
-	hdmi->irq = INVALID_GPIO;
-#else
-	hdmi->irq = gpio_to_irq(client->irq);
-#endif
 
 	hdmi->xscale = 100;
 	hdmi->yscale = 100;
@@ -253,40 +235,39 @@ static int cat66121_hdmi_i2c_probe(struct i2c_client *client,const struct i2c_de
 	
 
 	cat66121_hdmi_sys_init();
-
-#if defined(CONFIG_DEBUG_FS)
-	{
-		struct dentry *debugfs_dir = debugfs_create_dir("it66121", NULL);
-		if (IS_ERR(debugfs_dir))
-		{
-			dev_err(&client->dev,"failed to create debugfs dir for it66121!\n");
-		}
-		else
-			debugfs_create_file("hdmi", S_IRUSR,debugfs_dir,hdmi,&hdmi_reg_fops);
-	}
+#ifdef HDMI_DEBUG
+	device_create_file(&(client->dev), &hdmi_attrs[0]);
 #endif
 
-	if(hdmi->irq != INVALID_GPIO) {
-		cat66121_irq_work_func(NULL);
+#ifdef HDMI_USE_IRQ
+	if(client->irq != INVALID_GPIO) {
+		INIT_WORK(&cat66121_hdmi->irq_work, cat66121_irq_work_func);
+		schedule_work(&cat66121_hdmi->irq_work);
 		if((rc = gpio_request(client->irq, "hdmi gpio")) < 0)
-		{
-			dev_err(&client->dev, "fail to request gpio %d\n", client->irq);
-			goto err_request_lcdc;
-		}
+	    {
+	        dev_err(&client->dev, "fail to request gpio %d\n", client->irq);
+	        goto err_request_lcdc;
+	    }
 
+		schedule_delayed_work(&check_status_work, msecs_to_jiffies(5000));
+	    hdmi->irq = gpio_to_irq(client->irq);
 		cat66121_hdmi->gpio = client->irq;
-		gpio_pull_updown(client->irq, GPIOPullUp);
-		gpio_direction_input(client->irq);
-		if((rc = request_threaded_irq(hdmi->irq, NULL ,cat66121_thread_interrupt, IRQF_TRIGGER_LOW | IRQF_ONESHOT, dev_name(&client->dev), hdmi)) < 0)
-		{
-			dev_err(&client->dev, "fail to request hdmi irq\n");
-			goto err_request_irq;
-		}
-	}else{
+	    gpio_pull_updown(client->irq, GPIOPullUp);
+	    gpio_direction_input(client->irq);
+	    if((rc = request_irq(hdmi->irq, cat66121_irq, IRQF_TRIGGER_FALLING, NULL, hdmi)) < 0)
+	    {
+	        dev_err(&client->dev, "fail to request hdmi irq\n");
+	        goto err_request_irq;
+	    }
+	}
+	else
+#else
+	{
 		cat66121_hdmi->workqueue = create_singlethread_workqueue("cat66121 irq");
 		INIT_DELAYED_WORK(&(cat66121_hdmi->delay_work), cat66121_irq_work_func);
 		cat66121_irq_work_func(NULL);
 	}
+#endif
 
 	dev_info(&client->dev, "cat66121 hdmi i2c probe ok\n");
 	

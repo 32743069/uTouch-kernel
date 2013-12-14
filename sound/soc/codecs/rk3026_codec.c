@@ -52,19 +52,23 @@ module_param(debug, int, S_IRUGO|S_IWUSR);
 */
 #define  OUT_VOLUME    31//0~31
 
+
 /* capture vol set
  * 0: -18db
  * 12: 0db
  * 31: 28.5db
  * step: 1.5db
 */
-#define CAP_VOL	   17//0-31
+#define CAP_VOL	   18//0-31
 
 //with capacity or  not
 #define WITH_CAP
+#define SPK_AMP_DELAY 200
+#define HP_MOS_DELAY 450
 #ifdef CONFIG_MACH_RK_FAC 
-	rk3026_hdmi_ctrl=0;
+  rk3026_hdmi_ctrl=0;
 #endif
+
 struct rk3026_codec_priv {
 	struct snd_soc_codec *codec;
 
@@ -76,6 +80,7 @@ struct rk3026_codec_priv {
 
 	int spk_ctl_gpio;
 	int hp_ctl_gpio;
+    int mic_sel_gpio;
 	int delay_time;
 
 	long int playback_path;
@@ -102,6 +107,9 @@ static struct rk3026_codec_priv *rk3026_priv = NULL;
 static struct workqueue_struct *rk3026_codec_workq;
 
 static void rk3026_codec_capture_work(struct work_struct *work);
+static int rk3026_codec_power_up(int type);
+static int rk3026_codec_power_down(int type);
+
 static DECLARE_DELAYED_WORK(capture_delayed_work, rk3026_codec_capture_work);
 static int rk3026_codec_work_capture_type = RK3026_CODEC_WORK_NULL;
 static bool rk3026_for_mid = 1, is_hdmi_in = false;
@@ -149,7 +157,7 @@ static const unsigned int rk3026_reg_defaults[RK3026_PGAR_AGC_CTL5+1] = {
 	[RK3026_HPOUT_CTL] = 0x0000,
 	[RK3026_HPOUTL_GAIN] = 0x0000,
 	[RK3026_HPOUTR_GAIN] = 0x0000,
-	[RK3026_SELECT_CURRENT] = 0x001e,
+	[RK3026_SELECT_CURRENT] = 0x003e,
 	[RK3026_PGAL_AGC_CTL1] = 0x0000,
 	[RK3026_PGAL_AGC_CTL2] = 0x0046,
 	[RK3026_PGAL_AGC_CTL3] = 0x0041,
@@ -451,64 +459,9 @@ bool get_hdmi_state(void)
 
 #ifdef CONFIG_MACH_RK_FAC
 void rk3026_codec_set_spk(bool on)
-{
-	struct snd_soc_codec *codec = rk3026_priv->codec;
-
-	DBG("%s : %s\n", __func__, on ? "enable spk" : "disable spk");
-        
-  if(rk3026_hdmi_ctrl)
-  {
-
-		if (!rk3026_priv || !rk3026_priv->codec) {
-			printk("%s : rk3026_priv or rk3026_priv->codec is NULL\n", __func__);
-			return;
-		}
-	
-		if (on) {
-			if (rk3026_for_mid)
-			{
-			snd_soc_update_bits(codec, RK3026_HPOUT_CTL,
-				RK3026_HPOUTL_MUTE_MSK, RK3026_HPOUTL_MUTE_DIS);
-			snd_soc_update_bits(codec, RK3026_HPOUT_CTL,
-				RK3026_HPOUTR_MUTE_MSK, RK3026_HPOUTR_MUTE_DIS);
-			}
-			else
-			{
-				snd_soc_dapm_enable_pin(&codec->dapm, "Headphone Jack");
-				snd_soc_dapm_enable_pin(&codec->dapm, "Ext Spk");
-			}
-		} else {
-			if (rk3026_priv->spk_ctl_gpio != INVALID_GPIO) {
-				DBG("%s : set spk ctl gpio LOW\n", __func__);
-				gpio_set_value(rk3026_priv->spk_ctl_gpio, GPIO_LOW);
-			}
-	
-			if (rk3026_priv->hp_ctl_gpio != INVALID_GPIO) {
-				DBG("%s : set hp ctl gpio LOW\n", __func__);
-				gpio_set_value(rk3026_priv->hp_ctl_gpio, GPIO_LOW);
-				}
-	
-			if (rk3026_for_mid)
-			{
-			snd_soc_update_bits(codec, RK3026_HPOUT_CTL,
-				RK3026_HPOUTL_MUTE_MSK, RK3026_HPOUTL_MUTE_EN);
-			snd_soc_update_bits(codec, RK3026_HPOUT_CTL,
-				RK3026_HPOUTR_MUTE_MSK, RK3026_HPOUTR_MUTE_EN);
-			}
-			else
-			{
-				snd_soc_dapm_disable_pin(&codec->dapm, "Headphone Jack");
-				snd_soc_dapm_disable_pin(&codec->dapm, "Ext Spk");
-			}
-		}
-		snd_soc_dapm_sync(&codec->dapm);
-	
-		is_hdmi_in = on ? 0 : 1;
-	}
-}
-EXPORT_SYMBOL_GPL(rk3026_codec_set_spk);
 #else
 void codec_set_spk(bool on)
+#endif
 {
 	struct snd_soc_codec *codec = rk3026_priv->codec;
 
@@ -560,6 +513,10 @@ void codec_set_spk(bool on)
 
 	is_hdmi_in = on ? 0 : 1;
 }
+
+#ifdef CONFIG_MACH_RK_FAC
+EXPORT_SYMBOL_GPL(rk3026_codec_set_spk);
+#else
 EXPORT_SYMBOL_GPL(codec_set_spk);
 #endif
 
@@ -778,14 +735,16 @@ static int rk3026_codec_power_down(int type);
 static int rk3026_playback_path_get(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
-	if (!rk3026_priv) {
+	struct rk3026_codec_priv *rk3026 = rk3026_priv;
+
+	if (!rk3026) {
 		printk("%s : rk3026_priv is NULL\n", __func__);
 		return -EINVAL;
 	}
 
-	DBG("%s : playback_path = %ld\n",__func__,ucontrol->value.integer.value[0]);
+	DBG("%s : playback_path %ld\n",__func__,ucontrol->value.integer.value[0]);
 
-	ucontrol->value.integer.value[0] = rk3026_priv->playback_path;
+	ucontrol->value.integer.value[0] = rk3026->playback_path;
 
 	return 0;
 }
@@ -793,39 +752,73 @@ static int rk3026_playback_path_get(struct snd_kcontrol *kcontrol,
 static int rk3026_playback_path_put(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
+	struct rk3026_codec_priv *rk3026 = rk3026_priv;
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
 	long int pre_path;
 
-	if (!rk3026_priv) {
+	if (!rk3026) {
 		printk("%s : rk3026_priv is NULL\n", __func__);
 		return -EINVAL;
 	}
 
-	if (rk3026_priv->playback_path == ucontrol->value.integer.value[0]){
-		printk("%s : playback_path is not changed!\n",__func__);
+	if (rk3026->playback_path == ucontrol->value.integer.value[0]){
+		DBG("%s : playback_path is not changed!\n",__func__);
 		return 0;
 	}
-	
-	pre_path = rk3026_priv->playback_path;
-	rk3026_priv->playback_path = ucontrol->value.integer.value[0];
 
-	DBG("%s : set playback_path = %ld, hdmi %s\n", __func__,
-		rk3026_priv->playback_path, get_hdmi_state() ? "in" : "out");
+	pre_path = rk3026->playback_path;
+	rk3026->playback_path = ucontrol->value.integer.value[0];
+
+	printk("%s : set playback_path %ld, pre_path %ld\n", __func__,
+		rk3026->playback_path, pre_path);
+
+
+	// mute output for pop noise
+	if (rk3026 && rk3026->spk_ctl_gpio != INVALID_GPIO) {
+		DBG("%s : set spk ctl gpio LOW\n", __func__);
+		gpio_set_value(rk3026->spk_ctl_gpio, GPIO_LOW);
+	}
+
+	if (rk3026 && rk3026->hp_ctl_gpio != INVALID_GPIO) {
+		DBG("%s : set hp ctl gpio LOW\n", __func__);
+		gpio_set_value(rk3026->hp_ctl_gpio, GPIO_LOW);
+	}
 
 	if(get_hdmi_state())
 		return 0;
 
-	switch (rk3026_priv->playback_path) {
+	switch (rk3026->playback_path) {
 	case OFF:
 		if (pre_path != OFF)
 			rk3026_codec_power_down(RK3026_CODEC_PLAYBACK);
 		break;
 	case RCV:
+		if (rk3026->voice_call_path != OFF) {
+			//close incall route
+			rk3026_codec_power_down(RK3026_CODEC_INCALL);
+
+			rk3026->voice_call_path = OFF;
+		}
 		break;
 	case SPK_PATH:
 	case RING_SPK:
+        DBG("%s : PUT SPK_PATH\n",__func__);
 		if (pre_path == OFF)
 			rk3026_codec_power_up(RK3026_CODEC_PLAYBACK);
+#if 0
+		snd_soc_update_bits(codec, RK3026_SPKL_CTL,
+			rk3026_VOL_MASK, SPKOUT_VOLUME); //, volume (bit 0-4)
+		snd_soc_update_bits(codec, rk3026_SPKR_CTL,
+			rk3026_VOL_MASK, SPKOUT_VOLUME);
+#endif
+#ifdef CONFIG_RK_HEADSET_DET
+		if (rk3026 && rk3026->hp_ctl_gpio != INVALID_GPIO) {
+			DBG("%s : set hp ctl gpio HIGH\n", __func__);
+			gpio_set_value(rk3026->hp_ctl_gpio, GPIO_HIGH);
+			//sleep for MOSFET or SPK power amplifier chip
+			msleep(HP_MOS_DELAY);
+		}
+#endif
 		break;
 	case HP_PATH:
 	case HP_NO_MIC:
@@ -833,6 +826,23 @@ static int rk3026_playback_path_put(struct snd_kcontrol *kcontrol,
 	case RING_HP_NO_MIC:
 		if (pre_path == OFF)
 			rk3026_codec_power_up(RK3026_CODEC_PLAYBACK);
+#if 0
+		snd_soc_update_bits(codec, rk3026_SPKL_CTL,
+			rk3026_VOL_MASK, HPOUT_VOLUME); //, volume (bit 0-4)
+		snd_soc_update_bits(codec, rk3026_SPKR_CTL,
+			rk3026_VOL_MASK, HPOUT_VOLUME);
+#endif
+
+		if (rk3026 && rk3026->hp_ctl_gpio != INVALID_GPIO) {
+			DBG("%s : set hp ctl gpio HIGH\n", __func__);
+#ifdef CONFIG_RK_HEADSET_DET
+			gpio_set_value(rk3026->hp_ctl_gpio, GPIO_LOW);
+#else
+			gpio_set_value(rk3026->hp_ctl_gpio, GPIO_HIGH);
+#endif
+			//sleep for MOSFET or SPK power amplifier chip
+			msleep(HP_MOS_DELAY);
+		}
 		break;
 	case BT:
 		break;
@@ -840,6 +850,25 @@ static int rk3026_playback_path_put(struct snd_kcontrol *kcontrol,
 	case RING_SPK_HP:
 		if (pre_path == OFF)
 			rk3026_codec_power_up(RK3026_CODEC_PLAYBACK);
+#if 0
+		snd_soc_update_bits(codec, rk3026_SPKL_CTL,
+			rk3026_VOL_MASK, HPOUT_VOLUME); //, volume (bit 0-4)
+		snd_soc_update_bits(codec, rk3026_SPKR_CTL,
+			rk3026_VOL_MASK, HPOUT_VOLUME);
+#endif
+		if (rk3026 && rk3026->spk_ctl_gpio != INVALID_GPIO) {
+			DBG("%s : set spk ctl gpio HIGH\n", __func__);
+			gpio_set_value(rk3026->spk_ctl_gpio, GPIO_HIGH);
+			//sleep for MOSFET or SPK power amplifier chip
+			msleep(SPK_AMP_DELAY);
+		}
+
+		if (rk3026 && rk3026->hp_ctl_gpio != INVALID_GPIO) {
+			DBG("%s : set hp ctl gpio HIGH\n", __func__);
+			gpio_set_value(rk3026->hp_ctl_gpio, GPIO_HIGH);
+			//sleep for MOSFET or SPK power amplifier chip
+			msleep(HP_MOS_DELAY);
+		}
 		break;
 	default:
 		return -EINVAL;
@@ -851,15 +880,17 @@ static int rk3026_playback_path_put(struct snd_kcontrol *kcontrol,
 static int rk3026_capture_path_get(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
-	if (!rk3026_priv) {
+	struct rk3026_codec_priv *rk3026 = rk3026_priv;
+
+	if (!rk3026) {
 		printk("%s : rk3026_priv is NULL\n", __func__);
 		return -EINVAL;
 	}
 
-	DBG("%s : capture_path = %ld\n", __func__,
+	DBG("%s : capture_path %ld\n", __func__,
 		ucontrol->value.integer.value[0]);
 
-	ucontrol->value.integer.value[0] = rk3026_priv->capture_path;
+	ucontrol->value.integer.value[0] = rk3026->capture_path;
 
 	return 0;
 }
@@ -867,40 +898,54 @@ static int rk3026_capture_path_get(struct snd_kcontrol *kcontrol,
 static int rk3026_capture_path_put(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
-	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+	struct rk3026_codec_priv *rk3026 = rk3026_priv;
+	//struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
 	long int pre_path;
 
-	if (!rk3026_priv) {
+	if (!rk3026) {
 		printk("%s : rk3026_priv is NULL\n", __func__);
 		return -EINVAL;
 	}
 
-	if (rk3026_priv->capture_path == ucontrol->value.integer.value[0]){
-		printk("%s : capture_path is not changed!\n", __func__);
-		//return 0;
+	if (rk3026->capture_path == ucontrol->value.integer.value[0]){
+		DBG("%s : capture_path is not changed!\n", __func__);
+		return 0;
 	}
 
-	pre_path = rk3026_priv->capture_path;
-	rk3026_priv->capture_path = ucontrol->value.integer.value[0];
+	pre_path = rk3026->capture_path;
+	rk3026->capture_path = ucontrol->value.integer.value[0];
 
-	DBG("%s : set capture_path = %ld\n", __func__, rk3026_priv->capture_path);
+	printk("%s : set capture_path %ld, pre_path %ld\n", __func__,
+		rk3026->capture_path, pre_path);
 
-	switch (rk3026_priv->capture_path) {
+	switch (rk3026->capture_path) {
 	case MIC_OFF:
 		if (pre_path != MIC_OFF)
 			rk3026_codec_power_down(RK3026_CODEC_CAPTURE);
 		break;
 	case Main_Mic:
+    DBG("%s : PUT MAIN_MIC_PATH\n",__func__);
 		if (pre_path == MIC_OFF)
 			rk3026_codec_power_up(RK3026_CODEC_CAPTURE);
+#if 0
+		if (rk3026 && rk3026->mic_sel_gpio != INVALID_GPIO) {
+			DBG("%s : set mic sel gpio HIGH\n", __func__);
+			gpio_set_value(rk3026->mic_sel_gpio, GPIO_HIGH);
+		}
+#endif
 		break;
 	case Hands_Free_Mic:
 		if (pre_path == MIC_OFF)
 			rk3026_codec_power_up(RK3026_CODEC_CAPTURE);
+#if 0
+		if (rk3026 && rk3026->mic_sel_gpio != INVALID_GPIO) {
+			DBG("%s : set mic sel gpio HIGH\n", __func__);
+			gpio_set_value(rk3026->mic_sel_gpio, GPIO_LOW);
+		}
+#endif
 		break;
 	case BT_Sco_Mic:
 		break;
-
 	default:
 		return -EINVAL;
 	}
@@ -911,15 +956,17 @@ static int rk3026_capture_path_put(struct snd_kcontrol *kcontrol,
 static int rk3026_voice_call_path_get(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
-	if (!rk3026_priv) {
+	struct rk3026_codec_priv *rk3026 = rk3026_priv;
+
+	if (!rk3026) {
 		printk("%s : rk3026_priv is NULL\n", __func__);
 		return -EINVAL;
 	}
 
-	DBG("%s : playback_path = %ld\n", __func__,
+	DBG("%s : voice_call_path %ld\n", __func__,
 		ucontrol->value.integer.value[0]);
 
-	ucontrol->value.integer.value[0] = rk3026_priv->voice_call_path;
+	ucontrol->value.integer.value[0] = rk3026->voice_call_path;
 
 	return 0;
 }
@@ -927,54 +974,170 @@ static int rk3026_voice_call_path_get(struct snd_kcontrol *kcontrol,
 static int rk3026_voice_call_path_put(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
+	struct rk3026_codec_priv *rk3026 = rk3026_priv;
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
 	long int pre_path;
 
-	if (!rk3026_priv) {
+	if (!rk3026) {
 		printk("%s : rk3026_priv is NULL\n", __func__);
 		return -EINVAL;
 	}
 
-	if (rk3026_priv->voice_call_path == ucontrol->value.integer.value[0]){
-		printk("%s : playback_path is not changed!\n",__func__);
-		//return 0;
+	if (rk3026->voice_call_path == ucontrol->value.integer.value[0]){
+		DBG("%s : voice_call_path is not changed!\n",__func__);
+		return 0;
 	}
 
-	pre_path = rk3026_priv->voice_call_path;
-	rk3026_priv->voice_call_path = ucontrol->value.integer.value[0];
+	pre_path = rk3026->voice_call_path;
+	rk3026->voice_call_path = ucontrol->value.integer.value[0];
 
-	DBG("%s : set playback_path = %ld\n", __func__,
-		rk3026_priv->voice_call_path);
-
-	//open playback route for incall route and keytone
-	if (pre_path == OFF) {
-		if (rk3026_priv->playback_path != OFF) {
-			//mute output for incall route pop nosie
-				mdelay(100);
-		} else
-			rk3026_codec_power_up(RK3026_CODEC_PLAYBACK);
+	printk("%s : set voice_call_path %ld, pre_path %ld\n", __func__,
+		rk3026->voice_call_path, pre_path);
+/*
+	if (rk3026 && rk3026->spk_ctl_gpio != INVALID_GPIO) {
+		DBG("%s : set spk ctl gpio LOW\n", __func__);
+		gpio_set_value(rk3026->spk_ctl_gpio, GPIO_LOW);
 	}
 
-	switch (rk3026_priv->voice_call_path) {
+	if (rk3026 && rk3026->hp_ctl_gpio != INVALID_GPIO) {
+		DBG("%s : set hp ctl gpio LOW\n", __func__);
+		gpio_set_value(rk3026->hp_ctl_gpio, GPIO_LOW);
+	}
+*/
+	switch (rk3026->voice_call_path) {
 	case OFF:
-		if (pre_path != MIC_OFF)
-			rk3026_codec_power_down(RK3026_CODEC_CAPTURE);
+	        if (rk3026 && rk3026->hp_ctl_gpio != INVALID_GPIO) {
+        	        DBG("%s : set hp ctl gpio LOW\n", __func__);
+	                gpio_set_value(rk3026->hp_ctl_gpio, GPIO_LOW);
+        	}
+
+       		 rk3026_codec_power_down(RK3026_CODEC_INCALL);
+		 rk3026_codec_power_up(RK3026_CODEC_PLAYBACK);
 		break;
 	case RCV:
+#if 0
+		//set mic for modem
+		if (rk3026 && rk3026->mic_sel_gpio != INVALID_GPIO) {
+			DBG("%s : set mic sel gpio HIGH\n", __func__);
+			gpio_set_value(rk3026->mic_sel_gpio, GPIO_HIGH);
+		}
+#endif
+		//rcv is controled by modem, so close incall route
+		if (pre_path != OFF &&
+			pre_path != BT)
+			rk3026_codec_power_down(RK3026_CODEC_INCALL);
+
+		// open spk for key tone
+#ifdef CONFIG_RK_HEADSET_DET
+		if(rk3026->playback_path == HP_PATH || rk3026->playback_path == HP_NO_MIC ||
+	            rk3026->playback_path == RING_HP || rk3026->playback_path == RING_HP_NO_MIC)
+        {      
+    		if (rk3026 && rk3026->hp_ctl_gpio != INVALID_GPIO) {
+    			DBG("%s : set spk ctl gpio HIGH\n", __func__);
+    			gpio_set_value(rk3026->hp_ctl_gpio, GPIO_LOW);
+    			//sleep for MOSFET or SPK power amplifier chip
+    			msleep(SPK_AMP_DELAY);
+            }
+		}
+#else
+		if (rk3026 && rk3026->spk_ctl_gpio != INVALID_GPIO) {
+			DBG("%s : set spk ctl gpio HIGH\n", __func__);
+			gpio_set_value(rk3026->spk_ctl_gpio, GPIO_HIGH);
+			//sleep for MOSFET or SPK power amplifier chip
+			msleep(SPK_AMP_DELAY);
+		}
+#endif
 		break;
 	case SPK_PATH:
+#if 0
+		//set mic for modem
+		if (rk3026 && rk3026->mic_sel_gpio != INVALID_GPIO) {
+			DBG("%s : set mic sel gpio HIGH\n", __func__);
+			gpio_set_value(rk3026->mic_sel_gpio, GPIO_HIGH);
+		}
+#endif
 		//open incall route
-		if (pre_path == OFF || 	pre_path == RCV || pre_path == BT)
+		if (pre_path == OFF ||
+			pre_path == RCV ||
+			pre_path == BT)
 			rk3026_codec_power_up(RK3026_CODEC_INCALL);
-
+#if 0
+		snd_soc_update_bits(codec, rk3026_SPKL_CTL,
+			rk3026_VOL_MASK, SPKOUT_VOLUME); //, volume (bit 0-4)
+		snd_soc_update_bits(codec, rk3026_SPKR_CTL,
+			rk3026_VOL_MASK, SPKOUT_VOLUME);
+#endif
+		if (rk3026 && rk3026->hp_ctl_gpio != INVALID_GPIO) {
+			DBG("%s : set spk ctl gpio HIGH\n", __func__);
+			gpio_set_value(rk3026->hp_ctl_gpio, GPIO_HIGH);
+			//sleep for MOSFET or SPK power amplifier chip
+			msleep(SPK_AMP_DELAY);
+		}
 		break;
 	case HP_PATH:
-	case HP_NO_MIC:
+#if 0
+		//set mic for modem
+		if (rk3026 && rk3026->mic_sel_gpio != INVALID_GPIO) {
+			DBG("%s : set mic sel gpio HIGH\n", __func__);
+			gpio_set_value(rk3026->mic_sel_gpio, GPIO_LOW);
+		}
+#endif
 		//open incall route
-		if (pre_path == OFF || 	pre_path == RCV || pre_path == BT)
+		if (pre_path == OFF ||
+			pre_path == RCV ||
+			pre_path == BT)
 			rk3026_codec_power_up(RK3026_CODEC_INCALL);
+#if 0
+		snd_soc_update_bits(codec, rk3026_SPKL_CTL,
+			rk3026_VOL_MASK, HPOUT_VOLUME); //, volume (bit 0-4)
+		snd_soc_update_bits(codec, rk3026_SPKR_CTL,
+			rk3026_VOL_MASK, HPOUT_VOLUME);
+#endif
+		if (rk3026 && rk3026->hp_ctl_gpio != INVALID_GPIO) {
+			DBG("%s : set hp ctl gpio HIGH\n", __func__);
+#ifdef CONFIG_RK_HEADSET_DET
+			gpio_set_value(rk3026->hp_ctl_gpio, GPIO_LOW);
+#else
+			gpio_set_value(rk3026->hp_ctl_gpio, GPIO_HIGH);
+#endif
+			//sleep for MOSFET or SPK power amplifier chip
+			msleep(HP_MOS_DELAY);
+		}
+	case HP_NO_MIC:
+#if 0
+		//set mic for modem
+		if (rk3026 && rk3026->mic_sel_gpio != INVALID_GPIO) {
+			DBG("%s : set mic sel gpio HIGH\n", __func__);
+			gpio_set_value(rk3026->mic_sel_gpio, GPIO_HIGH);
+		}
+#endif
+		//open incall route
+		if (pre_path == OFF ||
+			pre_path == RCV ||
+			pre_path == BT)
+			rk3026_codec_power_up(RK3026_CODEC_INCALL);
+#if 0
+		snd_soc_update_bits(codec, rk3026_SPKL_CTL,
+			rk3026_VOL_MASK, HPOUT_VOLUME); //, volume (bit 0-4)
+		snd_soc_update_bits(codec, rk3026_SPKR_CTL,
+			rk3026_VOL_MASK, HPOUT_VOLUME);
+#endif
+		if (rk3026 && rk3026->hp_ctl_gpio != INVALID_GPIO) {
+			DBG("%s : set hp ctl gpio HIGH\n", __func__);
+#ifdef CONFIG_RK_HEADSET_DET
+			gpio_set_value(rk3026->hp_ctl_gpio, GPIO_LOW);
+#else
+			gpio_set_value(rk3026->hp_ctl_gpio, GPIO_HIGH);
+#endif
+			//sleep for MOSFET or SPK power amplifier chip
+			msleep(HP_MOS_DELAY);
+		}
 		break;
 	case BT:
+		//BT is controled by modem, so close incall route
+		if (pre_path != OFF &&
+			pre_path != RCV)
+			rk3026_codec_power_down(RK3026_CODEC_INCALL);
 		break;
 	default:
 		return -EINVAL;
@@ -1599,7 +1762,8 @@ static int rk3026_digital_mute(struct snd_soc_dai *dai, int mute)
 	struct snd_soc_codec *codec = dai->codec;
 	unsigned int is_hp_pd;
 
-
+#ifdef CONFIG_RK_HEADSET_DET
+#else
 	is_hp_pd = (RK3026_HPOUTL_MSK | RK3026_HPOUTR_MSK) & snd_soc_read(codec, RK3026_HPOUT_CTL);
 
 	if (mute) {
@@ -1618,6 +1782,7 @@ static int rk3026_digital_mute(struct snd_soc_dai *dai, int mute)
 			msleep(100);//rk3026_priv->delay_time);
 		}
 	}
+#endif
 	return 0;
 }
 
@@ -1707,9 +1872,10 @@ static int rk3026_codec_power_up(int type)
 		return -EINVAL;
 	}
 
-	printk("%s : power up %s%s\n", __func__,
+	printk("%s : power up %s%s%s\n", __func__,
 		type == RK3026_CODEC_PLAYBACK ? "playback" : "",
-		type == RK3026_CODEC_CAPTURE ? "capture" : "");
+		type == RK3026_CODEC_CAPTURE ? "capture" : "",
+		type == RK3026_CODEC_INCALL ? "incall" : "");
 
 	if (type == RK3026_CODEC_PLAYBACK) {
 		for (i = 0; i < RK3026_CODEC_PLAYBACK_POWER_UP_LIST_LEN; i++) {
@@ -1723,11 +1889,9 @@ static int rk3026_codec_power_up(int type)
 				capture_power_up_list[i].value);
 		}
 	} else if (type == RK3026_CODEC_INCALL) {
-		snd_soc_update_bits(codec, RK3026_ALC_MUNIN_CTL,
-			 RK3026_MUXINL_F_MSK | RK3026_MUXINR_F_MSK, 
-			 RK3026_MUXINR_F_INR | RK3026_MUXINL_F_INL);
-		
-	}
+        /*To be perfect*/
+        snd_soc_write(codec, 0xac, 0);
+    }
 
 	return 0;
 }
@@ -1742,9 +1906,10 @@ static int rk3026_codec_power_down(int type)
 		return -EINVAL;
 	}
 	
-	printk("%s : power down %s%s%s\n", __func__,
+	printk("%s : power down %s%s%s%s\n", __func__,
 		type == RK3026_CODEC_PLAYBACK ? "playback" : "",
 		type == RK3026_CODEC_CAPTURE ? "capture" : "",
+		type == RK3026_CODEC_INCALL ? "incall" : "",
 		type == RK3026_CODEC_ALL ? "all" : "");
 
 	if ((type == RK3026_CODEC_CAPTURE) || (type == RK3026_CODEC_INCALL)) {
@@ -1767,7 +1932,9 @@ static int rk3026_codec_power_down(int type)
 				playback_power_down_list[i].value);
 
 		}
-
+    } else if (type == RK3026_CODEC_INCALL) {
+        /*To be perfect*/
+        snd_soc_write(codec, 0xac, 0x11);
 	} else if (type == RK3026_CODEC_ALL) {
 		rk3026_reset(codec);
 	}
@@ -1793,7 +1960,7 @@ static void  rk3026_codec_capture_work(struct work_struct *work)
 
 	rk3026_codec_work_capture_type = RK3026_CODEC_WORK_NULL;
 }
-
+#if 0
 static int rk3026_startup(struct snd_pcm_substream *substream,
 			  struct snd_soc_dai *dai)
 {
@@ -1843,6 +2010,10 @@ static int rk3026_startup(struct snd_pcm_substream *substream,
 			}
 		}
 	}
+	
+#ifdef CONFIG_MACH_RK_FAC 
+	rk3026_hdmi_ctrl=1;
+#endif
 	return 0;
 }
 
@@ -1906,7 +2077,7 @@ static void rk3026_shutdown(struct snd_pcm_substream *substream,
 		}
 	}
 }
-
+#endif
 #define RK3026_PLAYBACK_RATES (SNDRV_PCM_RATE_8000 |\
 			      SNDRV_PCM_RATE_16000 |	\
 			      SNDRV_PCM_RATE_32000 |	\
@@ -1931,8 +2102,10 @@ static struct snd_soc_dai_ops rk3026_dai_ops = {
 	.set_fmt	= rk3026_set_dai_fmt,
 	.set_sysclk	= rk3026_set_dai_sysclk,
 	.digital_mute	= rk3026_digital_mute,
+#if 0
 	.startup	= rk3026_startup,
 	.shutdown	= rk3026_shutdown,
+#endif
 };
 
 static struct snd_soc_dai_driver rk3026_dai[] = {
@@ -1988,6 +2161,8 @@ static int rk3026_suspend(struct snd_soc_codec *codec, pm_message_t state)
 		}
 		rk3026_codec_power_down(RK3026_CODEC_PLAYBACK);
 		rk3026_codec_power_down(RK3026_CODEC_ALL);
+		snd_soc_write(codec, RK3026_SELECT_CURRENT,0x1e);
+		snd_soc_write(codec, RK3026_SELECT_CURRENT,0x3e);
 	}
 	else
 		rk3026_set_bias_level(codec, SND_SOC_BIAS_OFF);
@@ -2143,11 +2318,11 @@ static int rk3026_probe(struct snd_soc_codec *codec)
 		snd_soc_dapm_add_routes(&codec->dapm, rk3026_dapm_routes,
 			ARRAY_SIZE(rk3026_dapm_routes));
 
-	}
+	} else {
+        snd_soc_add_controls(codec, rk3026_snd_path_controls,
+				ARRAY_SIZE(rk3026_snd_path_controls));
+    }
 	
-#ifdef CONFIG_MACH_RK_FAC 
-	rk3026_hdmi_ctrl=1;
-#endif
 	return 0;
 
 err__:

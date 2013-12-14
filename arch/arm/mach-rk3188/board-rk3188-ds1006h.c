@@ -46,10 +46,7 @@
 #include <linux/sensor-dev.h>
 #include <linux/mfd/tps65910.h>
 #include <linux/regulator/act8846.h>
-#include <plat/efuse.h>
 #include <linux/regulator/rk29-pwm-regulator.h>
-#include <plat/ddr.h>
-
 #if defined(CONFIG_CT36X_TS)
 #include <linux/ct36x.h>
 #endif
@@ -702,7 +699,6 @@ static struct rk_hdmi_platform_data rk_hdmi_pdata = {
 #endif
 #ifdef CONFIG_ION
 #define ION_RESERVE_SIZE        (80 * SZ_1M)
-#define ION_RESERVE_SIZE_120M   (120 * SZ_1M)
 static struct ion_platform_data rk30_ion_pdata = {
 	.nr = 1,
 	.heaps = {
@@ -710,7 +706,7 @@ static struct ion_platform_data rk30_ion_pdata = {
 			.type = ION_HEAP_TYPE_CARVEOUT,
 			.id = ION_NOR_HEAP_ID,
 			.name = "norheap",
-//			.size = ION_RESERVE_SIZE,
+			.size = ION_RESERVE_SIZE,
 		}
 	},
 };
@@ -1170,7 +1166,7 @@ struct platform_device rk_device_gps = {
 	};
 #endif
 
-#if defined(CONFIG_MT5931_MT6622) || defined(CONFIG_MTK_MT6622)
+#if defined(CONFIG_MT5931_MT6622)
 static struct mt6622_platform_data mt6622_platdata = {
 		    .power_gpio         = { // BT_REG_ON
 		      #if DS1006H_V1_2_SUPPORT
@@ -1270,7 +1266,7 @@ static struct platform_device *devices[] __initdata = {
 #ifdef CONFIG_GPS_RK
 	&rk_device_gps,
 #endif
-#if defined(CONFIG_MT5931_MT6622) || defined(CONFIG_MTK_MT6622)
+#ifdef CONFIG_MT5931_MT6622
 	&device_mt6622,
 #endif
 #if defined(CONFIG_MT6229)
@@ -1969,7 +1965,7 @@ static void __init machine_rk30_board_init(void)
 	    clk_set_rate(clk_get_sys("rk_serial.1", "uart"), 48*1000000);
 #endif
 
-#if defined(CONFIG_MT5931_MT6622) || defined(CONFIG_MTK_MT6622)
+#if defined(CONFIG_MT5931_MT6622)
 		clk_set_rate(clk_get_sys("rk_serial.0", "uart"), 24*1000000);
 #endif		
 }
@@ -1977,7 +1973,6 @@ static void __init machine_rk30_board_init(void)
 #define HD_SCREEN_SIZE 1920UL*1200UL*4*3
 static void __init rk30_reserve(void)
 {
-	int size, ion_reserve_size;
 #if defined(CONFIG_ARCH_RK3188)
 	/*if lcd resolution great than or equal to 1920*1200,reserve the ump memory */
 	if(!(get_fb_size() < ALIGN(HD_SCREEN_SIZE,SZ_1M)))
@@ -1988,18 +1983,7 @@ static void __init rk30_reserve(void)
 	}
 #endif
 #ifdef CONFIG_ION
-	size = ddr_get_cap() >> 20;
-	if(size >= 1024) { // DDR >= 1G, set ion to 120M
-		rk30_ion_pdata.heaps[0].size = ION_RESERVE_SIZE_120M;
-		ion_reserve_size = ION_RESERVE_SIZE_120M;
-	}
-	else {
-		rk30_ion_pdata.heaps[0].size = ION_RESERVE_SIZE;
-		ion_reserve_size = ION_RESERVE_SIZE;
-	}
-	printk("ddr size = %d M, set ion_reserve_size size to %d\n", size, ion_reserve_size);
-	//rk30_ion_pdata.heaps[0].base = board_mem_reserve_add("ion", ION_RESERVE_SIZE);
-	rk30_ion_pdata.heaps[0].base = board_mem_reserve_add("ion", ion_reserve_size);
+	rk30_ion_pdata.heaps[0].base = board_mem_reserve_add("ion", ION_RESERVE_SIZE);
 #endif
 
 #ifdef CONFIG_FB_ROCKCHIP
@@ -2099,16 +2083,9 @@ static struct cpufreq_frequency_table dvfs_ddr_table_volt_level0[] = {
 	{.frequency = 200 * 1000 + DDR_FREQ_SUSPEND,    .index = 950 * 1000},
 	{.frequency = 300 * 1000 + DDR_FREQ_VIDEO,      .index = 1000 * 1000},
 	{.frequency = 396 * 1000 + DDR_FREQ_NORMAL,     .index = 1100 * 1000},
-        {.frequency = 460 * 1000 + DDR_FREQ_DUALVIEW,     .index = 1150 * 1000},
-	//{.frequency = 528 * 1000 + DDR_FREQ_NORMAL,     .index = 1200 * 1000},
 	{.frequency = CPUFREQ_TABLE_END},
 };
 
-static struct cpufreq_frequency_table dvfs_ddr_table_t[] = {
-	{.frequency = 200 * 1000 + DDR_FREQ_SUSPEND,    .index = 950 * 1000},
-	{.frequency = 460 * 1000 + DDR_FREQ_NORMAL,     .index = 1150 * 1000},
-	{.frequency = CPUFREQ_TABLE_END},
-};
 #define dvfs_ddr_table dvfs_ddr_table_volt_level0
 
 /******************************** arm dvfs frequency volt table end **********************************/
@@ -2118,42 +2095,14 @@ static struct cpufreq_frequency_table dvfs_ddr_table_t[] = {
 //#define DVFS_CPU_TABLE_SIZE	(ARRAY_SIZE(dvfs_cpu_logic_table))
 //static struct cpufreq_frequency_table cpu_dvfs_table[DVFS_CPU_TABLE_SIZE];
 //static struct cpufreq_frequency_table dep_cpu2core_table[DVFS_CPU_TABLE_SIZE];
-int get_max_freq(struct cpufreq_frequency_table *table)
-{
-	int i,temp=0;
-	
-	for(i=0;table[i].frequency!= CPUFREQ_TABLE_END;i++)
-	{
-		if(temp<table[i].frequency)
-			temp=table[i].frequency;
-	}	
-	printk("get_max_freq=%d\n",temp);
-	return temp;
-}
 
 void __init board_clock_init(void)
 {
-	u32 flags=RK30_CLOCKS_DEFAULT_FLAGS;
-#if !defined(CONFIG_ARCH_RK3188)
-	if(get_max_freq(dvfs_gpu_table)<=(400*1000))
-	{	
-		flags=RK30_CLOCKS_DEFAULT_FLAGS|CLK_GPU_GPLL;
-	}
-	else
-		flags=RK30_CLOCKS_DEFAULT_FLAGS|CLK_GPU_CPLL;
-#endif	
-	rk30_clock_data_init(periph_pll_default, codec_pll_default, flags);
-	//dvfs_set_arm_logic_volt(dvfs_cpu_logic_table, cpu_dvfs_table, dep_cpu2core_table);	
+	rk30_clock_data_init(periph_pll_default, codec_pll_default, RK30_CLOCKS_DEFAULT_FLAGS);
+	//dvfs_set_arm_logic_volt(dvfs_cpu_logic_table, cpu_dvfs_table, dep_cpu2core_table);
 	dvfs_set_freq_volt_table(clk_get(NULL, "cpu"), dvfs_arm_table);
 	dvfs_set_freq_volt_table(clk_get(NULL, "gpu"), dvfs_gpu_table);
-#if defined(CONFIG_ARCH_RK3188)
-	if (rk_pll_flag() == 0)
-		dvfs_set_freq_volt_table(clk_get(NULL, "ddr"), dvfs_ddr_table);
-	else
-		dvfs_set_freq_volt_table(clk_get(NULL, "ddr"), dvfs_ddr_table_t);
-#else
 	dvfs_set_freq_volt_table(clk_get(NULL, "ddr"), dvfs_ddr_table);
-#endif
 }
 
 MACHINE_START(RK30, "RK30board")

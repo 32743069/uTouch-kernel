@@ -91,7 +91,7 @@ enum {
 	PMIC_TYPE_ACT8846 =3,
 	PMIC_TYPE_RK808 =4,
 	PMIC_TYPE_RICOH619 =5,
-	PMIC_TYPE_RT5025 =6,
+	PMIC_TYPE_AXP202=7,
 	PMIC_TYPE_MAX,
 };
 extern __sramdata  int g_pmic_type;
@@ -101,7 +101,7 @@ extern __sramdata  int g_pmic_type;
 #define pmic_is_act8846()  (g_pmic_type == PMIC_TYPE_ACT8846)
 #define pmic_is_rk808()  (g_pmic_type == PMIC_TYPE_RK808)
 #define pmic_is_ricoh619()  (g_pmic_type == PMIC_TYPE_RICOH619)
-#define pmic_is_rt5025()  (g_pmic_type == PMIC_TYPE_RT5025)
+#define pmic_is_axp202()  (g_pmic_type == PMIC_TYPE_AXP202)
 
 struct  pmu_info {
 	char		*name;
@@ -231,11 +231,8 @@ struct sensor_platform_data {
 struct board_id_platform_data {
 	int gpio_pin[32];
 	int num_gpio;
-	char *board_id_buf;
-	int (*init_platform_hw)(void);
+	int (*init_platform_hw)(void);	
 	int (*exit_platform_hw)(void);
-	struct board_device_table *device_table;
-	int device_table_size;
 	int (*init_parameter)(int id);  
 };
 

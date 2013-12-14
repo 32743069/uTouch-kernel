@@ -66,8 +66,10 @@
 		 UART_LSR_THRE doesn't. So, the macro BOTH_EMPTY should be replaced with UART_LSR_TEMT.
 *v1.4 : 2013-04-16
 *		1.fix bug dma buffer free error
+*v1.5 : 2013-06-21
+*		1. add CONFIG_BAUD_RATE_AUTO_CLK, that set the uart_clk accroding the baud rate
 */
-#define VERSION_AND_TIME  "rk_serial.c v1.4 2013-04-16"
+#define VERSION_AND_TIME  "rk_serial.c v1.4 2013-06-21"
 
 #define PORT_RK		90
 #define UART_USR	0x1F	/* UART Status Register */
@@ -1234,7 +1236,7 @@ static int serial_rk_startup(struct uart_port *port)
 	int retval, fifosize = 0;
 	
 
-	dev_dbg(port->dev, "%s\n", __func__);
+	dev_info(port->dev, "%s: line:%d\n", __func__, port->line);
 
 	/*
 	 * Allocate the IRQ
@@ -1361,6 +1363,8 @@ static void serial_rk_shutdown(struct uart_port *port)
 	clk_disable(up->pclk);
 }
 
+#define CONFIG_BAUD_RATE_AUTO_CLK  1
+
 static void
 serial_rk_set_termios(struct uart_port *port, struct ktermios *termios,
 		      struct ktermios *old)
@@ -1369,8 +1373,10 @@ serial_rk_set_termios(struct uart_port *port, struct ktermios *termios,
 		container_of(port, struct uart_rk_port, port);
 	unsigned char cval = 0, fcr = 0, mcr = 0;
 	unsigned long flags;
-	unsigned int baud, quot;
-	dev_dbg(port->dev, "+%s\n", __func__);
+	unsigned int baud = 0, quot = 0; 
+	unsigned int uclk = 0, ret = 0;
+	
+	dev_info(port->dev, "+%s  line:%d\n", __func__, port->line);
 
 	switch (termios->c_cflag & CSIZE) {
 	case CS5:
@@ -1401,19 +1407,38 @@ serial_rk_set_termios(struct uart_port *port, struct ktermios *termios,
 	if (termios->c_cflag & CMSPAR)
 		cval |= UART_LCR_SPAR;
 #endif
-
+	//clk_disable(up->clk);
 
 	/*
 	 * Ask the core to calculate the divisor for us.
 	 */
+#ifdef CONFIG_BAUD_RATE_AUTO_CLK
+	{	
+	 	baud = uart_get_baud_rate(port, termios, old, 0, 4000000);
+		
+		quot = 200000/baud + 1;
+		uclk = baud * quot * 16;
+		ret = clk_set_rate(up->clk, uclk);
+		if(!ret) {
+			port->uartclk = clk_get_rate(up->clk);
+			if(port->uartclk != uclk) {
+				dev_err(up->port.dev, "set uart clk:%d, but %d is effective\n", uclk, port->uartclk);
+			}
+		} else {
+			dev_err(up->port.dev, "set uart clk:%d error\n", uclk);
+		}	
+	}
+#else	
 	baud = uart_get_baud_rate(port, termios, old,
-				  port->uartclk / 16 / 0xffff,
-				  port->uartclk / 16);
+		  port->uartclk / 16 / 0xffff,
+		  port->uartclk / 16);
 
-	quot = uart_get_divisor(port, baud);
-	//dev_info(up->port.dev, "uartclk:%d\n", port->uartclk/16);
-	//dev_info(up->port.dev, "baud:%d\n", baud);
-	//dev_info(up->port.dev, "quot:%d\n", quot);
+	quot = uart_get_divisor(port, baud); 
+#endif	
+	
+	dev_info(up->port.dev, "uartclk:%d\n", port->uartclk);
+	dev_info(up->port.dev, "baud:%d\n", baud);
+	dev_info(up->port.dev, "quot:%d\n", quot);
 
 	if (baud < 2400){
 		fcr = UART_FCR_ENABLE_FIFO | UART_FCR_TRIGGER_1;
@@ -1506,9 +1531,9 @@ serial_rk_set_termios(struct uart_port *port, struct ktermios *termios,
 #endif
 
 	//to avoid uart busy when set baud rate  hhb@rock-chips.com
-	serial_out(up, UART_SRR, UART_RESET);
-	mcr = serial_in(up, UART_MCR);
-	serial_out(up, UART_MCR, mcr | 0x10);  //loopback mode
+	//serial_out(up, UART_SRR, UART_RESET);
+	//mcr = serial_in(up, UART_MCR);
+	//serial_out(up, UART_MCR, mcr | 0x10);  //loopback mode
 	
 	up->lcr = cval;				/* Save LCR */
 	/* set DLAB */
