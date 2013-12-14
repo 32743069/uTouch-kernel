@@ -36,6 +36,8 @@
 /*
 * define sdcard PowerEn-pin
 */
+#include "board_macro_define.h"
+
 #define RK29SDK_SD_CARD_PWR_EN                  INVALID_GPIO
 #define RK29SDK_SD_CARD_PWR_EN_LEVEL            GPIO_LOW 
 int rk31sdk_get_sdmmc0_pin_io_voltage(void)
@@ -72,7 +74,7 @@ int rk31sdk_get_sdmmc0_pin_io_voltage(void)
 *
 */          
 #if defined(CONFIG_RTL8192CU) || defined(CONFIG_RTL8188EU) || defined(CONFIG_RTL8723AU) || defined(CONFIG_MT7601)
-#if defined(CONFIG_MACH_RK3026_PHONEPAD_780)
+#if defined(CONFIG_MACH_RK3026_PHONEPAD_780) || defined(BCL_RK2926_88V_A20)
 // #define CONFIG_USB_WIFI_POWER_CONTROLED_BY_GPIO
 #else
     #define CONFIG_USB_WIFI_POWER_CONTROLED_BY_GPIO

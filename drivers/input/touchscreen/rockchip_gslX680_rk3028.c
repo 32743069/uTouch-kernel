@@ -29,7 +29,7 @@
 #include <linux/input/mt.h>
 
 #include "rk3028_gslX680_86v.h"
-
+#include "../../../arch/arm/mach-rk3026/board_macro_define.h"
 
 //#define GSL_DEBUG
 //#define GSL_TIMER
@@ -651,8 +651,12 @@ static void report_data(struct gsl_ts *ts, u16 x, u16 y, u8 pressure, u8 id)
 	input_mt_slot(ts->input, id);		
 	input_report_abs(ts->input, ABS_MT_TRACKING_ID, id);
 	input_report_abs(ts->input, ABS_MT_TOUCH_MAJOR, pressure);
-	input_report_abs(ts->input, ABS_MT_POSITION_X, x);
-	input_report_abs(ts->input, ABS_MT_POSITION_Y, y);	
+#ifdef BCL_RK2926_88V_A20
+	input_report_abs(ts->input, ABS_MT_POSITION_X, 1024-x);
+#else	
+	input_report_abs(ts->input, ABS_MT_POSITION_X, x);	
+#endif	
+	input_report_abs(ts->input, ABS_MT_POSITION_Y, y);
 	input_report_abs(ts->input, ABS_MT_WIDTH_MAJOR, 1);
 #else
 	input_report_abs(ts->input, ABS_MT_TRACKING_ID, id);
