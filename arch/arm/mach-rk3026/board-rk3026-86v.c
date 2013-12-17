@@ -68,6 +68,8 @@
 #include "../../../drivers/misc/gps/rk_gps/rk_gps.h"
 #endif
 #include "board-rk3026-86v-camera.c"
+#include "board_macro_define.h"
+
 /***********************************************************
 *	board config
 ************************************************************/
@@ -550,7 +552,11 @@ static struct sensor_platform_data mxc6225_info = {
         .irq_enable = 0,
         .poll_delay_ms = 30,
         .init_platform_hw = mxc6225_init_platform_hw,
-        .orientation = { 1, 0, 0, 0, 1, 0, 0, 0, 0},
+#if defined(BCL_RK2926_88V_A20)
+        .orientation = { 1, 0, 0, 0, -1, 0, 0, 0, 0},
+#else		
+        .orientation = { 0, -1, 0, 1, 0, 0, 0, 0, 0},
+#endif
 };
 #endif
 #if defined (CONFIG_GS_LIS3DH)
