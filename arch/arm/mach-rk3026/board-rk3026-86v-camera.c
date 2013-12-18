@@ -58,7 +58,7 @@ static struct rkcamera_platform_data new_camera[] = {
                         0,
                         0,
                         1,
-                        0),*/
+                        0),*//*
    new_camera_device(RK29_CAM_SENSOR_GC0308,
                         front,
                         RK30_PIN3_PB3,
@@ -66,6 +66,7 @@ static struct rkcamera_platform_data new_camera[] = {
                         0,
                         1,
                         0),
+                        */
     /*                    
     new_camera_device(RK29_CAM_SENSOR_GC0308,
                         back,
@@ -74,7 +75,46 @@ static struct rkcamera_platform_data new_camera[] = {
                         0,
                         1,
                         0), 
-        */                
+        */  
+    /*
+   new_camera_device_ex(RK29_CAM_SENSOR_GC0308,
+			back,
+			0,
+			INVALID_VALUE,
+			INVALID_VALUE,
+			INVALID_VALUE,
+			INVALID_VALUE,
+			RK30_PIN3_PD7,
+			CONS(RK29_CAM_SENSOR_GC0308,_PWRDN_ACTIVE),
+			false,
+			CONS(RK29_CAM_SENSOR_GC0308,_FULL_RESOLUTION),
+			0,
+			1,
+			250000,
+			CONS(RK29_CAM_SENSOR_GC0308,_I2C_ADDR),
+			0,
+			24),
+
+	*/    
+
+    new_camera_device_ex(RK29_CAM_SENSOR_GC0308,
+			    front,
+			    0,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    RK30_PIN3_PB3,
+			    CONS(RK29_CAM_SENSOR_GC0308,_PWRDN_ACTIVE),
+			    false,
+			    CONS(RK29_CAM_SENSOR_GC0308,_FULL_RESOLUTION),
+			    0,
+			    1,
+			    250000,
+			    CONS(RK29_CAM_SENSOR_GC0308,_I2C_ADDR),
+			    0,
+			    24),
+
     new_camera_device_end
 #endif
 };
