@@ -100,7 +100,6 @@ static struct rt3261_init_reg init_list[] = {
 	{RT3261_OUTPUT      	, 0x8888},//unmute OUTVOLL/R
 	{RT3261_SPO_CLSD_RATIO 	, 0x0001},
 	{RT3261_I2S1_SDP	, 0xd000},
-
 	// huangcun 20130816 s
 #if 1
 	/*speaker*/
