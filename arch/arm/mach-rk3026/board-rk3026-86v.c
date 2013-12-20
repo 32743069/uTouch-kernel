@@ -77,8 +77,8 @@
 #define POWER_ON_PIN		RK30_PIN1_PA2   //PWR_HOLD
 
 //touchscreen
-//#define TOUCH_RST_PIN		RK2928_PIN0_PD3
-//#define TOUCH_RST_VALUE		GPIO_HIGH
+#define TOUCH_RST_PIN		RK2928_PIN0_PD3
+#define TOUCH_RST_VALUE		GPIO_HIGH
 //#define TOUCH_PWR_PIN		RK2928_PIN2_PB3
 //#define TOUCH_PWR_VALUE		GPIO_LOW
 #define TOUCH_INT_PIN		RK2928_PIN1_PB0
@@ -167,7 +167,7 @@ static struct spi_board_info board_spi_devices[] = {
 	
 	int gslx680_init_platform_hw(void)
 	{
-	#if 0
+	#if 1
 	       if(gpio_request(TOUCH_RST_PIN,NULL) != 0){
 			gpio_free(TOUCH_RST_PIN);
 			printk("gslx680_init_platform_hw gpio_request error\n");
@@ -179,7 +179,7 @@ static struct spi_board_info board_spi_devices[] = {
 			printk("gslx680_init_platform_hw  gpio_request error\n");
 			return -EIO;
 		}
-	#if 0	
+	#if 1	
 		gpio_direction_output(TOUCH_RST_PIN, TOUCH_RST_VALUE);
 		mdelay(10);
 		gpio_set_value(TOUCH_RST_PIN,!TOUCH_RST_VALUE);
@@ -192,7 +192,7 @@ static struct spi_board_info board_spi_devices[] = {
 	}
 	
 	struct ts_hw_data     gslx680_info = {
-		//.reset_gpio = TOUCH_RST_PIN,
+		.reset_gpio = TOUCH_RST_PIN,
 		.touch_en_gpio = TOUCH_INT_PIN,
 		.init_platform_hw = gslx680_init_platform_hw,
 	};

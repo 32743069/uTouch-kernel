@@ -77,7 +77,7 @@ int rk31sdk_get_sdmmc0_pin_io_voltage(void)
 #if defined(CONFIG_MACH_RK3026_PHONEPAD_780) || defined(BCL_RK2926_88V_A20)
 // #define CONFIG_USB_WIFI_POWER_CONTROLED_BY_GPIO
 #else
-    #define CONFIG_USB_WIFI_POWER_CONTROLED_BY_GPIO
+    //#define CONFIG_USB_WIFI_POWER_CONTROLED_BY_GPIO
 #endif
 #if  defined(CONFIG_PWM_CONTROL_LOGIC)
     #define RK30SDK_WIFI_GPIO_POWER_N               RK30_PIN1_PA1 
