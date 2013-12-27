@@ -32,9 +32,9 @@ Comprehensive camera device registration:
                              cif_chl,\
                              mclk)\           // sensor input clock rate, 24 or 48
                           
-*//*
+*/
 static struct rkcamera_platform_data new_camera[] = { 
-    new_camera_device(RK29_CAM_SENSOR_GC2035,
+   /* new_camera_device(RK29_CAM_SENSOR_GC2035,
                         back,
                         RK30_PIN3_PB3,
                         0,
