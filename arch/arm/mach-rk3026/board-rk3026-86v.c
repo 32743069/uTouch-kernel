@@ -1047,6 +1047,18 @@ static int rk30_adc_battery_io_init(void){
 
 }
 
+#if defined(CONFIG_REGULATOR_ACT8931)
+extern  int act8931_charge_det;
+extern  int act8931_charge_ok;
+
+int rk30_battery_adc_is_dc_charging( ){
+        return  act8931_charge_det  ;  
+}
+int rk30_battery_adc_charging_ok( ){
+       return act8931_charge_ok ;
+}
+#endif
+
 static struct rk30_adc_battery_platform_data rk30_adc_battery_platdata = {
         .dc_det_pin      = DC_DET_PIN,
         .batt_low_pin    = INVALID_GPIO, 
@@ -1055,6 +1067,11 @@ static struct rk30_adc_battery_platform_data rk30_adc_battery_platdata = {
 	 .usb_det_pin = INVALID_GPIO,
         .dc_det_level    = GPIO_LOW,
         .charge_ok_level = GPIO_HIGH,
+
+	#if defined(CONFIG_REGULATOR_ACT8931)
+	.is_dc_charging  = rk30_battery_adc_is_dc_charging,
+	.charging_ok	 = rk30_battery_adc_charging_ok ,
+	#endif
 
 	.reference_voltage = 3300, // the rK2928 is 3300;RK3066 and rk29 are 2500;rk3066B is 1800;
        .pull_up_res = 200,     //divider resistance ,  pull-up resistor
