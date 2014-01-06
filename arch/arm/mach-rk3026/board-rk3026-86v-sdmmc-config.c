@@ -73,7 +73,8 @@ int rk31sdk_get_sdmmc0_pin_io_voltage(void)
 * Otherwise, you do not define this macro, eliminate it.
 *
 */          
-#if defined(CONFIG_RTL8192CU) || defined(CONFIG_RTL8188EU) || defined(CONFIG_RTL8723AU) || defined(CONFIG_MT7601)
+#if defined(CONFIG_RTL8192CU) || defined(CONFIG_RTL8188EU) || defined(CONFIG_RTL8723AU) || defined(CONFIG_MT7601) || defined(CONFIG_RTL8192DU)
+
 #if defined(CONFIG_MACH_RK3026_PHONEPAD_780) || defined(BCL_RK2926_88V_A20)
 // #define CONFIG_USB_WIFI_POWER_CONTROLED_BY_GPIO
 #else
@@ -87,7 +88,8 @@ int rk31sdk_get_sdmmc0_pin_io_voltage(void)
 
     #define RK30SDK_WIFI_GPIO_POWER_ENABLE_VALUE    GPIO_LOW//GPIO_HIGH        
     
-#elif defined(CONFIG_BCM4329) || defined(CONFIG_BCM4319) || defined(CONFIG_RKWIFI) || defined(CONFIG_RTL8189ES)
+#elif defined(CONFIG_BCM4329) || defined(CONFIG_BCM4319) || defined(CONFIG_RKWIFI) || defined(CONFIG_RTL8189ES) \
+	|| defined(CONFIG_RTL8723BS)
 
 #if  defined(CONFIG_PWM_CONTROL_LOGIC)
     #define RK30SDK_WIFI_GPIO_POWER_N               RK30_PIN1_PA1 
@@ -178,7 +180,7 @@ int rk31sdk_get_sdio_wifi_voltage(void)
        voltage = 3000 ; //power 3000V
 #elif defined(CONFIG_MT6620) 
     voltage = 1800 ; //power 2800V
-#elif defined(CONFIG_RDA5990)||defined(CONFIG_RTL8723AS)  
+#elif defined(CONFIG_RDA5990)||defined(CONFIG_RTL8723AS) || defined(CONFIG_RTL8723BS)
     voltage = 3300 ; //power 3300V
 #else
     //default, sdio use 3.0V
