@@ -48,14 +48,18 @@ static int rk3188_load_screen(struct rk_lcdc_device_driver *dev_drv, bool initsc
 static int  rk3188_lcdc_clk_enable(struct rk3188_lcdc_device *lcdc_dev)
 {
 
-	clk_enable(lcdc_dev->hclk);
-	clk_enable(lcdc_dev->dclk);
-	clk_enable(lcdc_dev->aclk);
-	clk_enable(lcdc_dev->pd);
+	if(!lcdc_dev->clk_on)
+	{
+		clk_enable(lcdc_dev->hclk);
+		clk_enable(lcdc_dev->dclk);
+		clk_enable(lcdc_dev->aclk);
+		clk_enable(lcdc_dev->pd);
+		spin_lock(&lcdc_dev->reg_lock);
+		lcdc_dev->clk_on = 1;
+		spin_unlock(&lcdc_dev->reg_lock);
+	}
 
-	spin_lock(&lcdc_dev->reg_lock);
-	lcdc_dev->clk_on = 1;
-	spin_unlock(&lcdc_dev->reg_lock);
+	
 	printk("rk3188 lcdc%d clk enable...\n",lcdc_dev->id);
 	
 	return 0;
@@ -63,14 +67,18 @@ static int  rk3188_lcdc_clk_enable(struct rk3188_lcdc_device *lcdc_dev)
 
 static int rk3188_lcdc_clk_disable(struct rk3188_lcdc_device *lcdc_dev)
 {
-	spin_lock(&lcdc_dev->reg_lock);
-	lcdc_dev->clk_on = 0;
-	spin_unlock(&lcdc_dev->reg_lock);
-	mdelay(25);
-	clk_disable(lcdc_dev->dclk);
-	clk_disable(lcdc_dev->hclk);
-	clk_disable(lcdc_dev->aclk);
-	clk_disable(lcdc_dev->pd);
+	if(lcdc_dev->clk_on)
+	{
+		spin_lock(&lcdc_dev->reg_lock);
+		lcdc_dev->clk_on = 0;
+		spin_unlock(&lcdc_dev->reg_lock);
+		mdelay(25);
+		clk_disable(lcdc_dev->dclk);
+		clk_disable(lcdc_dev->hclk);
+		clk_disable(lcdc_dev->aclk);
+		clk_disable(lcdc_dev->pd);
+	}
+	
 	printk("rk3188 lcdc%d clk disable...\n",lcdc_dev->id);
 	
 	return 0;
@@ -101,6 +109,7 @@ static void rk3188_lcdc_reg_dump(struct rk3188_lcdc_device *lcdc_dev)
        }
        
 }
+
 static void rk3188_lcdc_read_reg_defalut_cfg(struct rk3188_lcdc_device *lcdc_dev)
 {
 	int reg=0;
@@ -281,6 +290,7 @@ static int rk3188_lcdc_reg_update(struct rk_lcdc_device_driver *dev_drv)
 	return 0;
 	
 }
+
 static int rk3188_lcdc_reg_resume(struct rk3188_lcdc_device *lcdc_dev)
 {
 	memcpy((u8*)lcdc_dev->regs, (u8*)lcdc_dev->regsbak, 0x84);
@@ -436,7 +446,7 @@ static int rk3188_lcdc_init(struct rk_lcdc_device_driver *dev_drv)
 		return -EINVAL;
 	}
 	if (IS_ERR(lcdc_dev->pd) || (IS_ERR(lcdc_dev->aclk)) ||(IS_ERR(lcdc_dev->dclk)) || (IS_ERR(lcdc_dev->hclk)))
-    {
+    	{
        		printk(KERN_ERR "failed to get lcdc%d clk source\n",lcdc_dev->id);
    	}
 	if(!support_uboot_display())
@@ -991,9 +1001,11 @@ static int rk3188_lcdc_blank(struct rk_lcdc_device_driver *dev_drv,
 			break;
 		}
 		lcdc_cfg_done(lcdc_dev);
-		dev_info(dev_drv->dev,"blank mode:%d\n",blank_mode);
+		
 	}
 	spin_unlock(&lcdc_dev->reg_lock);
+
+	dev_info(dev_drv->dev,"blank mode:%d\n",blank_mode);
 
     	return 0;
 }
@@ -1040,6 +1052,7 @@ static int rk3188_lcdc_early_suspend(struct rk_lcdc_device_driver *dev_drv)
 		dev_drv->screen_ctr_info->io_disable();
 
 	spin_lock(&lcdc_dev->reg_lock);
+	lcdc_dev->standby = 1;
 	if(likely(lcdc_dev->clk_on))
 	{
 		lcdc_msk_reg(lcdc_dev,INT_STATUS,m_FS_INT_CLEAR,v_FS_INT_CLEAR(1));
@@ -1085,37 +1098,37 @@ static int rk3188_lcdc_early_resume(struct rk_lcdc_device_driver *dev_drv)
 	if(dev_drv->screen_ctr_info->io_enable) 		//power on
 		dev_drv->screen_ctr_info->io_enable();
 	
-	if(!lcdc_dev->clk_on)
+
+	if(lcdc_dev->atv_layer_cnt) //only resume the lcdc that need to use
 	{
 		rk3188_lcdc_clk_enable(lcdc_dev);
-	}
-	rk3188_lcdc_reg_resume(lcdc_dev);  //resume reg
+		
+		rk3188_lcdc_reg_resume(lcdc_dev);  //resume reg
 
-	spin_lock(&lcdc_dev->reg_lock);
-	if(dev_drv->cur_screen->dsp_lut)			//resume dsp lut
-	{
-		lcdc_msk_reg(lcdc_dev,SYS_CTRL,m_DSP_LUT_EN,v_DSP_LUT_EN(0));
-		lcdc_cfg_done(lcdc_dev);
-		mdelay(25);
-		for(i=0;i<256;i++)
+		spin_lock(&lcdc_dev->reg_lock);
+		if(dev_drv->cur_screen->dsp_lut)			//resume dsp lut
 		{
-			v = dev_drv->cur_screen->dsp_lut[i];
-			c = lcdc_dev->dsp_lut_addr_base+i;
-			writel_relaxed(v,c);
+			lcdc_msk_reg(lcdc_dev,SYS_CTRL,m_DSP_LUT_EN,v_DSP_LUT_EN(0));
+			lcdc_cfg_done(lcdc_dev);
+			mdelay(25);
+			for(i=0;i<256;i++)
+			{
+				v = dev_drv->cur_screen->dsp_lut[i];
+				c = lcdc_dev->dsp_lut_addr_base+i;
+				writel_relaxed(v,c);
+			}
+			lcdc_msk_reg(lcdc_dev,SYS_CTRL,m_DSP_LUT_EN,v_DSP_LUT_EN(1));
 		}
-		lcdc_msk_reg(lcdc_dev,SYS_CTRL,m_DSP_LUT_EN,v_DSP_LUT_EN(1));
-	}
-	
-	if(lcdc_dev->atv_layer_cnt)
-	{
+		
+		
 		lcdc_msk_reg(lcdc_dev,DSP_CTRL1,m_DSP_OUT_ZERO ,v_DSP_OUT_ZERO(0));
 		lcdc_msk_reg(lcdc_dev, SYS_CTRL,m_LCDC_STANDBY,v_LCDC_STANDBY(0));
 		lcdc_cfg_done(lcdc_dev);
+		lcdc_dev->standby = 0;
+		spin_unlock(&lcdc_dev->reg_lock);
 	}
-	spin_unlock(&lcdc_dev->reg_lock);
 
-	if(!lcdc_dev->atv_layer_cnt)
-		rk3188_lcdc_clk_disable(lcdc_dev);
+	
 
 	if(dev_drv->screen0->standby)
 		dev_drv->screen0->standby(0);	      //screen wake up
@@ -1149,6 +1162,7 @@ static int rk3188_lcdc_ovl_mgr(struct rk_lcdc_device_driver *dev_drv,int swap,bo
 	{
 		ovl = -EPERM;
 	}
+	
 	spin_unlock(&lcdc_dev->reg_lock);
 
 	return ovl;
@@ -1459,6 +1473,17 @@ static int rk3188_lcdc_dpi_status(struct rk_lcdc_device_driver *dev_drv)
 	return ovl;
 }
 
+static rk3188_lcdc_set_irq_to_cpu(struct rk_lcdc_device_driver * dev_drv,int enable)
+{
+	struct rk3188_lcdc_device *lcdc_dev =
+                                container_of(dev_drv,struct rk3188_lcdc_device,driver);
+	if (enable)
+		enable_irq(lcdc_dev->irq);
+	else
+		disable_irq(lcdc_dev->irq);
+	return 0;
+	
+}
 int rk3188_lcdc_poll_vblank(struct rk_lcdc_device_driver * dev_drv)
 {
 	struct rk3188_lcdc_device *lcdc_dev = 
@@ -1466,7 +1491,7 @@ int rk3188_lcdc_poll_vblank(struct rk_lcdc_device_driver * dev_drv)
         u32 int_reg ;
 	int ret;
 	//spin_lock(&lcdc_dev->reg_lock);
-	if(lcdc_dev->clk_on)
+	if(lcdc_dev->clk_on && (!lcdc_dev->standby))
 	{
 		int_reg = lcdc_readl(lcdc_dev,INT_STATUS);
 	        if(int_reg & m_LF_INT_STA)
@@ -1482,7 +1507,6 @@ int rk3188_lcdc_poll_vblank(struct rk_lcdc_device_driver * dev_drv)
 		ret = RK_LF_STATUS_NC;
 	}	
 	//spin_unlock(&lcdc_dev->reg_lock);
-
 	return ret;
 }
 
@@ -1521,6 +1545,7 @@ static struct rk_lcdc_device_driver lcdc_driver = {
 	.fb_layer_remap         = rk3188_fb_layer_remap,
 	.set_dsp_lut            = rk3188_set_dsp_lut,
 	.poll_vblank		= rk3188_lcdc_poll_vblank,
+	.set_irq_to_cpu		= rk3188_lcdc_set_irq_to_cpu,
 	.dpi_open               = rk3188_lcdc_dpi_open,
 	.dpi_layer_sel          = rk3188_lcdc_dpi_layer_sel,
 	.dpi_status          	= rk3188_lcdc_dpi_status,
