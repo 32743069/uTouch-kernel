@@ -49,6 +49,19 @@ static void __iomem *pwm_base;
 static struct backlight_device *rk29_bl;
 static int suspend_flag = 0;
 
+#if defined(CONFIG_TCHIP_MACH_TR726C)
+#define RK29_USE_NEW_FUNC1 
+#endif
+#ifdef RK29_USE_NEW_FUNC1
+static int rk29_bl_test_mode = 0;
+static int new_max_brightness=270; //use for RK29_USE_NEW_FUNC1, if > 255 ,use rk29_bl_info.max_brightness
+static int new_min_brightness=-1; //use for RK29_USE_NEW_FUNC1 , if < 0 , use rk29_bl_info.min_brightness
+module_param_named(rk29_bl_test_mode, rk29_bl_test_mode, int, 0644);
+module_param_named(tchip_bl_max, new_max_brightness, int, 0644);
+module_param_named(tchip_bl_min, new_min_brightness, int, 0644);
+static int new_max_div; //use for RK29_USE_NEW_FUNC1 
+static int new_min_div; //use for RK29_USE_NEW_FUNC1
+#endif
 
 int convertint(const char s[])  
 {  
@@ -78,6 +91,8 @@ static ssize_t backlight_write(struct device *dev,
 static ssize_t backlight_read(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
+    struct rk29_bl_info *rk29_bl_info = bl_get_data(rk29_bl);
+
 	DBG("rk29_bl_info->min_brightness=%d\n",rk29_bl_info->min_brightness);
 	return 0;
 }
@@ -143,6 +158,68 @@ int rk29_bl_val_scalor_conic(struct rk29_bl_info *rk29_bl_info,int brightness)
 	
 	return brightness;
 }
+#ifdef RK29_USE_NEW_FUNC1
+static int rk29_bl_calculate_div_func1(struct rk29_bl_info *rk29_bl_info,int brightness) // return the divh value
+{
+	u32 divh,div_total;
+	u32 ref = rk29_bl_info->bl_ref;
+	int div_min,div_max;
+
+	div_total = read_pwm_reg(PWM_REG_LRC);
+	if( rk29_bl_test_mode ){
+		if( ref ){
+			div_max = div_total;
+			div_min = 0;
+		}else{
+			div_min = div_total;
+			div_max = 0;
+		}
+	}else{
+		div_min = new_min_div;
+		div_max = new_max_div;
+	}
+
+	if(brightness){
+		//if(brightness<20) brightness=20;
+		divh = div_min + (div_max-div_min)*brightness/255;	
+	}else{
+		if( ref )
+			divh = 0;
+		else
+			divh = div_total;
+	}	
+	if( rk29_bl_test_mode )
+		printk(KERN_INFO "backlight test: brightness=%d,divh=%d,div_max=%d,div_min=%d\n",brightness,divh,div_max,div_min);
+
+	return divh;
+}
+#endif
+
+int rk29_bl_val_scalor_elongation(struct rk29_bl_info *rk29_bl_info,int brightness)
+{
+    int cal_brightness;
+
+    if (rk29_bl_info->max_brightness < rk29_bl_info->min_brightness)
+        rk29_bl_info->max_brightness = rk29_bl_info->min_brightness;
+
+    // æŠŠä¸Šå±‚ä¼ ä¸‹æ¥çš„(1~255)çš„å€¼æ¯”ä¾‹å¯¹åº”åˆ°(rk29_bl_info->min_brightness ~ rk29_bl_info->max_brightness)
+    // edit by zhansb@130320
+    cal_brightness = rk29_bl_info->min_brightness
+            + brightness * (rk29_bl_info->max_brightness
+            - rk29_bl_info->min_brightness) / 255;
+
+    if (cal_brightness > rk29_bl_info->max_brightness)
+        cal_brightness = rk29_bl_info->max_brightness;
+    if (cal_brightness < rk29_bl_info->min_brightness)
+        cal_brightness = rk29_bl_info->min_brightness;
+
+    DBG(">>>%s-->%d brightness = %d, cal_brightness = %d, min = %d, max = %d\n",
+            __FUNCTION__,__LINE__, brightness, cal_brightness,
+            rk29_bl_info->min_brightness, rk29_bl_info->max_brightness);
+
+    return cal_brightness;
+}
+
 static int rk29_bl_update_status(struct backlight_device *bl)
 {
 	u32 divh,div_total;
@@ -157,7 +234,7 @@ static int rk29_bl_update_status(struct backlight_device *bl)
 	    goto out;
 
 	brightness = bl->props.brightness;
-
+#if !defined(RK29_USE_NEW_FUNC1)
 	if(brightness)
 	{
 		if(rk29_bl_info->brightness_mode==BRIGHTNESS_MODE_LINE)
@@ -166,7 +243,7 @@ static int rk29_bl_update_status(struct backlight_device *bl)
 			brightness=rk29_bl_val_scalor_conic(rk29_bl_info,brightness);
 	}
 	//printk("%s,req brightness=%d,real is=%d\n",__FUNCTION__,bl->props.brightness,brightness);
-
+#endif
 	if (bl->props.power != FB_BLANK_UNBLANK)
 		brightness = 0;
 
@@ -183,11 +260,16 @@ static int rk29_bl_update_status(struct backlight_device *bl)
 		suspend_flag = 0;
 	}
 	div_total = read_pwm_reg(PWM_REG_LRC);
+#ifdef RK29_USE_NEW_FUNC1
+	divh = rk29_bl_calculate_div_func1(rk29_bl_info,brightness);
+#else 
 	if (ref) {
 		divh = div_total*brightness/BL_STEP;
 	} else {
 		divh = div_total*(BL_STEP-brightness)/BL_STEP;
 	}
+
+#endif
 	rk_pwm_setup(id, PWM_DIV, divh, div_total);
 
 //BL_CORE_DRIVER1 is the flag if backlight pwm is closed.
@@ -202,12 +284,14 @@ static int rk29_bl_update_status(struct backlight_device *bl)
 			rk29_bl_info->pwm_resume();
 		clk_enable(pwm_clk);
 		msleep(1);
+#if !defined(RK29_USE_NEW_FUNC1)
 		div_total = read_pwm_reg(PWM_REG_LRC);
 		if (ref) {
 			divh = div_total*brightness/BL_STEP;
 		} else {
 			divh = div_total*(BL_STEP-brightness)/BL_STEP;
 		}
+#endif
 		rk_pwm_setup(id, PWM_DIV, divh, div_total);
 	}
 
@@ -383,6 +467,25 @@ static int rk29_backlight_probe(struct platform_device *pdev)
 	rk29_bl->props.brightness = BL_STEP / 2;
 	rk29_bl->props.state = BL_CORE_DRIVER1;		
 
+#ifdef RK29_USE_NEW_FUNC1
+	if(new_min_brightness <0 || new_max_brightness > BL_STEP){
+		new_min_brightness=rk29_bl_info->min_brightness;
+		new_max_brightness=rk29_bl_info->max_brightness;
+	}
+	if( new_min_brightness >= new_max_brightness ){
+		new_min_brightness=rk29_bl_info->min_brightness;
+		new_max_brightness=rk29_bl_info->max_brightness;
+	}
+	div_total = read_pwm_reg(PWM_REG_LRC);
+	if (rk29_bl_info->bl_ref) {
+		new_min_div =div_total*new_min_brightness/BL_STEP; 
+		new_max_div =div_total*new_max_brightness/BL_STEP; 
+	} else {
+		new_min_div =div_total*(BL_STEP-new_min_brightness)/BL_STEP; 
+		new_max_div =div_total*(BL_STEP-new_max_brightness)/BL_STEP; 
+	}	
+	printk(KERN_INFO "############## new_max_div=%d,new_min_div%d\n",new_max_div,new_min_div);
+#endif
 	schedule_delayed_work(&rk29_backlight_work, msecs_to_jiffies(rk29_bl_info->delay_ms));
 	ret = device_create_file(&pdev->dev,&dev_attr_rk29backlight);
 	if(ret)
