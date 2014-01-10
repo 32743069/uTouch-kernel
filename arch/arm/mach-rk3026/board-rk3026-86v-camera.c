@@ -33,6 +33,13 @@ Comprehensive camera device registration:
                              mclk)\           // sensor input clock rate, 24 or 48
                           
 */
+#if defined(CONFIG_TCHIP_MACH_TR726C)
+#define TC_CAMERA_BACK_DN_PIN 0 
+#define TC_CAMERA_FRONT_DN_PIN 0
+#else
+#define TC_CAMERA_BACK_DN_PIN RK30_PIN0_PA1
+#define TC_CAMERA_FRONT_DN_PIN RK30_PIN3_PB3
+#endif
 static struct rkcamera_platform_data new_camera[] = { 
 #if defined(CONFIG_MACH_RK3026_PHONEPAD_780)
 	    new_camera_device(RK29_CAM_SENSOR_GC2035,
@@ -95,7 +102,7 @@ static struct rkcamera_platform_data new_camera[] = {
 			0,
 			24),
 
-	*/    
+	    
 
     new_camera_device_ex(RK29_CAM_SENSOR_GC0308,
 			    front,
@@ -114,7 +121,75 @@ static struct rkcamera_platform_data new_camera[] = {
 			    CONS(RK29_CAM_SENSOR_GC0308,_I2C_ADDR),
 			    0,
 			    24),
+*/
 
+
+
+//#####################3   back Camera
+
+/*
+   new_camera_device(RK29_CAM_SENSOR_GC2035,
+                        back,
+                        TC_CAMERA_BACK_DN_PIN,//RK30_PIN0_PA1,
+                        0,
+                        0,
+                        1,
+                        0),
+
+   new_camera_device(RK29_CAM_SENSOR_GC2035,
+                        back,
+                        TC_CAMERA_BACK_DN_PIN,
+                        0,
+                        0,
+                        1,
+                        0),
+ new_camera_device(RK29_CAM_SENSOR_GC0328,
+                        back,
+                        TC_CAMERA_BACK_DN_PIN,
+                        0,
+                        0,
+                        1,
+                        0),
+ new_camera_device(RK29_CAM_SENSOR_GC0329,
+                        back,
+                        TC_CAMERA_BACK_DN_PIN,
+                        0,
+                        0,
+                        1,
+                        0),
+   new_camera_device(RK29_CAM_SENSOR_GC0308,
+                        back,
+                        TC_CAMERA_BACK_DN_PIN,
+                        0,
+                        0,
+                        1,
+                        0),
+*/
+   new_camera_device(RK29_CAM_SENSOR_SP0838,
+                        back,
+                        RK30_PIN0_PA1,
+                        0,
+                        0,
+                        1,
+                        0),
+
+
+       //##############3   fornt Camera
+   new_camera_device(RK29_CAM_SENSOR_GC0308,
+                        front,
+                        TC_CAMERA_FRONT_DN_PIN,
+                        0,
+                        0,
+                        1,
+                        0),
+
+   new_camera_device(RK29_CAM_SENSOR_SP0838,
+                        front,
+                        TC_CAMERA_FRONT_DN_PIN,
+                        0,
+                        0,
+                        1,
+                        0),
     new_camera_device_end
 #endif
 };
@@ -289,6 +364,33 @@ static struct rkcamera_platform_data new_camera[] = {
 
 
 #endif
+
+#if defined(CONFIG_TCHIP_MACH_TR726C)
+#define CONFIG_SENSOR_POWER_IOCTL_USR	   0 //define this refer to your board layout
+#define CONFIG_SENSOR_RESET_IOCTL_USR	   0
+#define CONFIG_SENSOR_POWERDOWN_IOCTL_USR  1 	    
+#define CONFIG_SENSOR_FLASH_IOCTL_USR	   0
+int nmc1000_gpio_get_value(int gpio_num);
+void nmc1000_gpio_set_value(int gpio_num,int v);
+//1 -> SPK_CTL
+//3 -> CIF_PDN //fornt
+//4 -> CIF_PDN1
+static int tr726c_powerdn_usr_cb(struct rk29camera_gpio_res *res,int level)
+{
+	//back fornt camera diff frome it's name 
+	int pin=3;
+	//if(strcmp(res->dev_name,"gc0308_front") == 0) 
+	//	pin = 4;
+	printk(KERN_ERR "#########  camera pin is %d \n",pin);
+	//set gpio 0 is open
+	printk(KERN_ERR "#########  camera pin set %d\n",level);
+
+	nmc1000_gpio_set_value(pin, level);
+	printk(KERN_ERR "#########3 read cameara pin %d\n",nmc1000_gpio_get_value(pin));
+	mdelay(100);
+}
+#endif
+
 static void rk_cif_power(int on)
 {
     struct regulator *ldo_18,*ldo_28;
@@ -492,6 +594,10 @@ static void rk_cif_powerdowen(int on)
 static int sensor_powerdown_usr_cb (struct rk29camera_gpio_res *res,int on)
 {
 int camera_powerdown = res->gpio_powerdown;
+
+	#if defined(CONFIG_TCHIP_MACH_TR726C)
+	return tr726c_powerdn_usr_cb(res,on);
+	#endif
 
     #if 1 //defined(CONFIG_MACH_RK2926_V86)
     int ret = 0; 

@@ -82,10 +82,18 @@
 //#define TOUCH_PWR_PIN		RK2928_PIN2_PB3
 //#define TOUCH_PWR_VALUE		GPIO_LOW
 #define TOUCH_INT_PIN		RK2928_PIN1_PB0
+#if defined(CONFIG_TCHIP_MACH_TR726C)
+#define TOUCH_INT_PIN		RK2928_PIN0_PA1
+#define TOUCH_RST_PIN		INVALID_GPIO	
+#endif
+
 
 //backlight
 #define LCD_DISP_ON_PIN
 #define BL_PWM			0  // (0 ~ 2)
+#if defined(CONFIG_TCHIP_MACH_TR726C)
+#define BL_PWM			1  // (0 ~ 2)	
+#endif
 #define PWM_EFFECT_VALUE  	0
 //#define PWM_MUX_NAME      	GPIO0D2_PWM_0_NAME
 //#define PWM_MUX_MODE     	GPIO0D_PWM_0
@@ -98,15 +106,35 @@
 #define BL_EN_MUX_NAME  	GPIO3C1_OTG_DRVVBUS_NAME
 #define BL_EN_MUX_MODE   	GPIO3C_GPIO3C1
 
+#if defined(CONFIG_TCHIP_MACH_TR726C)
+#define RK29_BACKLIGHT_MAX	164//255
+#define RK29_BACKLIGHT_MIN	50//75
+#define BL_PRE_DIV	10*1000
+#else
+#define RK29_BACKLIGHT_MAX	255
+#define RK29_BACKLIGHT_MIN	100
+#define BL_PRE_DIV	10000
+#endif
 
 //fb
+#if defined(CONFIG_TCHIP_MACH_TR726C)
+#define LCD_EN_PIN		RK2928_PIN3_PB3
+#define LCD_EN_VALUE		GPIO_LOW
+#define LCD_CS_PIN		INVALID_GPIO
+#define LCD_CS_VALUE		GPIO_HIGH
+#else
 #define LCD_EN_PIN		RK2928_PIN1_PB3
 #define LCD_EN_VALUE		GPIO_LOW
 #define LCD_CS_PIN		INVALID_GPIO
 #define LCD_CS_VALUE		GPIO_HIGH
+#endif
 
 //gsensor
+#if defined(CONFIG_TCHIP_MACH_TR726C)
+#define GS_INT_PIN		RK2928_PIN0_PA0
+#else
 #define GS_INT_PIN		RK2928_PIN1_PB2
+#endif
 
 //sdmmc
 //Reference to board-rk3026-tb-sdmmc-config.c
@@ -118,7 +146,11 @@
 //pwm regulator
 #ifdef CONFIG_PWM_LOGIC_WITH_ARM
 #define REG_PWM_LOGIC			PWM_NULL // (0 ~ 2)
-#define REG_PWM_ARM			1 // (0 ~ 2)
+    #if defined(CONFIG_TCHIP_MACH_TR726C)
+#define REG_PWM_ARM			0 // (0 ~ 2)
+    #else
+#define REG_PWM_ARM			1 // (0 ~ 2)	
+    #endif
 #else
 #define REG_PWM_LOGIC			1 // (0 ~ 2)
 #define REG_PWM_ARM			0 // (0 ~ 2)
@@ -130,6 +162,23 @@
 
 //ion reserve memory
 #define ION_RESERVE_SIZE        (80 * SZ_1M)
+//codec:
+#if defined (CONFIG_TCHIP_MACH_TR726C)
+#define SPK_CTL_GPIO INVALID_GPIO
+#else
+#define SPK_CTL_GPIO RK2928_PIN1_PA0
+#endif
+#define HP_CTL_GPIO INVALID_GPIO
+
+//rtc pin
+#define RTC_INT_PIN RK30_PIN1_PA5
+
+//battery
+#if defined (CONFIG_TCHIP_MACH_TR726C)
+#define BAT_REF_VOL 3220
+#else
+#define BAT_REF_VOL 3300
+#endif
 
 static int pwm_mode[] = {PWM0, PWM1, PWM2};
 static inline int rk_gpio_request(int gpio, int direction, int value, const char *label)
@@ -154,7 +203,27 @@ static inline int rk_gpio_request(int gpio, int direction, int value, const char
 	return ret;
 }
 
+#ifdef CONFIG_NMC1XXX_WIFI_MODULE
+#define NMC1000_GPIO_RESET_N		   			RK30_PIN1_PA1
+#define NMC1000_GPIO_RESET_PIN_ENABLE_VALUE   	GPIO_HIGH
+static struct rk29xx_spi_chip spi_nmc_chip = {
+	//.poll_mode = 1,
+	.enable_dma = 1,
+};
+#endif
 static struct spi_board_info board_spi_devices[] = {
+	#ifdef CONFIG_NMC1XXX_WIFI_MODULE
+	{
+		.modalias	= "nmc_spi",
+		.platform_data	= NULL,
+		.max_speed_hz	= 36000000,//48000000
+		.bus_num	= 0,
+		.chip_select	= 0,
+		.mode		= SPI_MODE_0,
+		//.controller_data = (void *)NULL, /* DISPLAY_CS */
+		.controller_data = &spi_nmc_chip, /* DISPLAY_CS */
+	},
+	#endif
 };
 
 /***********************************************************
@@ -251,14 +320,23 @@ static int rk29_backlight_io_deinit(void)
 	gpio_free(BL_EN_PIN);
 #endif
 	pwm_gpio = iomux_mode_to_gpio(pwm_mode[BL_PWM]);
+#if defined(CONFIG_TCHIP_MACH_TR726C)
+	gpio_free(pwm_gpio);
+	return rk_gpio_request(pwm_gpio, GPIOF_DIR_OUT, GPIO_HIGH, "BL_PWM");
+#else
 	return rk_gpio_request(BL_EN_PIN, GPIOF_DIR_OUT, GPIO_LOW, "BL_PWM");
+#endif
 }
 
 static int rk29_backlight_pwm_suspend(void)
 {
 	int ret, pwm_gpio = iomux_mode_to_gpio(pwm_mode[BL_PWM]);
 
+#if defined(CONFIG_TCHIP_MACH_TR726C)
+	ret = rk_gpio_request(pwm_gpio, GPIOF_DIR_OUT, GPIO_HIGH, "BL_PWM");
+#else
 	ret = rk_gpio_request(pwm_gpio, GPIOF_DIR_OUT, GPIO_LOW, "BL_PWM");
+#endif
 	if(ret < 0)
 		return ret;
 #ifdef  LCD_DISP_ON_PIN
@@ -282,15 +360,15 @@ static int rk29_backlight_pwm_resume(void)
 
 static struct rk29_bl_info rk29_bl_info = {
 	.pwm_id = BL_PWM,
-	.min_brightness=100,
-	.max_brightness=255,
+	.min_brightness=RK29_BACKLIGHT_MIN,
+	.max_brightness=RK29_BACKLIGHT_MAX,
 	.brightness_mode = BRIGHTNESS_MODE_CONIC,
 	.bl_ref = PWM_EFFECT_VALUE,
 	.io_init = rk29_backlight_io_init,
 	.io_deinit = rk29_backlight_io_deinit,
 	.pwm_suspend = rk29_backlight_pwm_suspend,
 	.pwm_resume = rk29_backlight_pwm_resume,
-	.pre_div = 10000,
+	.pre_div = BL_PRE_DIV,
 };
 
 static struct platform_device rk29_device_backlight = {
@@ -538,6 +616,28 @@ static struct sensor_platform_data mma7660_info = {
 };
 #endif
 
+/* STK 8312 gsensor */
+#if defined (CONFIG_GS_STK831X)
+#define STK831X_INT_PIN GS_INT_PIN
+static int stk831x_init_platform_hw(void)
+{
+	//rk30_mux_api_set(GPIO1B2_SPI_RXD_UART1_SIN_NAME, GPIO1B_GPIO1B2);
+
+	return 0;
+}
+
+static struct sensor_platform_data stk831x_info = {
+	.type = SENSOR_TYPE_ACCEL,
+	.irq_enable = 0,
+	.poll_delay_ms = 30,
+        .init_platform_hw = stk831x_init_platform_hw,
+	#if defined(CONFIG_TCHIP_MACH_TR726C)
+	.orientation = {1, 0, 0, 0, -1, 0, 0, 0, -1},
+	#else
+	.orientation = {-1, 0, 0, 0, 1, 0, 0, 0, -1},
+	#endif
+};
+#endif
 
 #if defined (CONFIG_GS_MXC6225)
 #define MXC6225_INT_PIN   GS_INT_PIN
@@ -752,7 +852,7 @@ struct rk29_keys_platform_data rk29_keys_pdata = {
 /***********************************************************
 *	usb wifi
 ************************************************************/
-#if defined(CONFIG_RTL8192CU) || defined(CONFIG_RTL8188EU) || defined(CONFIG_RTL8192DU)
+#if defined(CONFIG_RTL8192CU) || defined(CONFIG_RTL8188EU) || defined(CONFIG_RTL8192DU) 
 
 static void rkusb_wifi_power(int on) {
 	int ret=0;
@@ -1001,6 +1101,9 @@ struct rk29_sdmmc_platform_data default_sdmmc2_data = {
 #else
 #define DC_DET_PIN RK30_PIN1_PA5
 #endif
+#if defined(CONFIG_TCHIP_MACH_TR726C)
+#define DC_DET_PIN INVALID_GPIO
+#endif
 
 #define CHARGE_OK_PIN   INVALID_GPIO//RK30_PIN0_PC6
 
@@ -1022,7 +1125,7 @@ static int rk30_adc_battery_io_init(void){
 	
 	//charge ok detect
 	if (CHARGE_OK_PIN != INVALID_GPIO){
- 		ret = gpio_request(RK30_PIN0_PC6, NULL);
+ 		ret = gpio_request(CHARGE_OK_PIN, NULL);
 	    	if (ret) {
 	    		printk("failed to request charge_ok gpio\n");
 	    	}
@@ -1033,18 +1136,6 @@ static int rk30_adc_battery_io_init(void){
 	    		printk("failed to set gpio charge_ok input\n");
 	    	}
 	}
- 		ret = gpio_request(RK30_PIN3_PD6, NULL);
-	    	if (ret) {
-	    		printk("failed to request charge_ok gpio\n");
-	    	}
-	
-	    	gpio_pull_updown(RK30_PIN3_PD6, GPIOPullUp);//important
-	    //	ret = gpio_direction_input(RK30_PIN3_PD6);
-	    //	if (ret) {
-	    //		printk("failed to set gpio charge_ok input\n");
-	    //	}
-	
-
 }
 
 #if defined(CONFIG_REGULATOR_ACT8931)
@@ -1063,17 +1154,12 @@ static struct rk30_adc_battery_platform_data rk30_adc_battery_platdata = {
         .dc_det_pin      = DC_DET_PIN,
         .batt_low_pin    = INVALID_GPIO, 
         .charge_set_pin  = INVALID_GPIO,
-        .charge_ok_pin   = INVALID_GPIO,//RK30_PIN1_PA0,
+        .charge_ok_pin   = CHARGE_OK_PIN,//RK30_PIN1_PA0,
 	 .usb_det_pin = INVALID_GPIO,
         .dc_det_level    = GPIO_LOW,
         .charge_ok_level = GPIO_HIGH,
 
-	#if defined(CONFIG_REGULATOR_ACT8931)
-	.is_dc_charging  = rk30_battery_adc_is_dc_charging,
-	.charging_ok	 = rk30_battery_adc_charging_ok ,
-	#endif
-
-	.reference_voltage = 3300, // the rK2928 is 3300;RK3066 and rk29 are 2500;rk3066B is 1800;
+	.reference_voltage = BAT_REF_VOL, // the rK2928 is 3300;RK3066 and rk29 are 2500;rk3066B is 1800;
        .pull_up_res = 200,     //divider resistance ,  pull-up resistor
        .pull_down_res = 200, //divider resistance , pull-down resistor
 
@@ -1335,11 +1421,12 @@ void __sramfunc rk30_pwm_logic_suspend_voltage(void)
 	/* pwm0: GPIO0_D2, pwm1: GPIO0_D3, pwm2: GPIO0_D4 */
 	sram_udelay(10000);
 
+	int off;
 #ifdef CONFIG_PWM_CONTROL_LOGIC
 #ifdef CONFIG_PWM_LOGIC_WITH_ARM	
-	int off = GPIO0_D2_OFFSET + 2*REG_PWM_ARM;
+	off = GPIO0_D2_OFFSET + 2*REG_PWM_ARM;
 #else
-	int off = GPIO0_D2_OFFSET + 2*REG_PWM_LOGIC;
+	off = GPIO0_D2_OFFSET + 2*REG_PWM_LOGIC;
 #endif
 	pwm_iomux_logic = grf_readl(GRF_GPIO0D_IOMUX);
 	pwm_dir_logic = gpio_readl(GPIO_DIR);
@@ -1366,9 +1453,9 @@ void __sramfunc rk30_pwm_logic_suspend_voltage(void)
 void __sramfunc rk30_pwm_logic_resume_voltage(void)
 {
 	/* pwm0: GPIO0_D2, pwm1: GPIO0_D3, pwm2: GPIO0_D4 */
-
+	int off;
 #ifdef CONFIG_PWM_CONTROL_LOGIC
-	int off = GPIO0_D2_OFFSET + 2*REG_PWM_LOGIC;
+	off = GPIO0_D2_OFFSET + 2*REG_PWM_LOGIC;
 	grf_writel((1<<off)|pwm_iomux_logic, GRF_GPIO0D_IOMUX);
 	gpio_writel(pwm_dir_logic, GPIO_DIR);
 	gpio_writel(pwm_do_logic, GPIO_D0);
@@ -1542,8 +1629,8 @@ void board_gpio_suspend(void)
 
 #ifdef CONFIG_SND_SOC_RK3026
 struct rk3026_codec_pdata rk3026_codec_pdata_info={
-    .spk_ctl_gpio = INVALID_GPIO,
-    .hp_ctl_gpio = RK2928_PIN1_PA0,
+    .spk_ctl_gpio = SPK_CTL_GPIO,
+    .hp_ctl_gpio = HP_CTL_GPIO,
 };
 
 static struct resource resources_acodec[] = {
@@ -1851,14 +1938,6 @@ static struct i2c_board_info __initdata i2c0_info[] = {
 		.platform_data = &tps65910_data,
 	},
 #endif
-#if defined (CONFIG_RTC_HYM8563)
-    {    
-        .type           = "rtc_hym8563",
-        .addr           = 0x51,
-        .flags          = 0, 
-        .irq            = RK30_PIN1_PA5,
-    },   
-#endif
 #ifdef  CONFIG_KP_AXP19
 	{
 		.type = "axp_mfd",
@@ -1899,6 +1978,14 @@ static struct i2c_board_info __initdata i2c1_info[] = {
                 .irq            = MXC6225_INT_PIN,
                 .platform_data  = &mxc6225_info,
         },
+#endif
+#if defined (CONFIG_RTC_HYM8563)
+    {    
+        .type           = "rtc_hym8563",
+        .addr           = 0x51,
+        .flags          = 0, 
+        .irq            = RTC_INT_PIN,
+    },   
 #endif
 #ifdef  CONFIG_KP_AXP20
 	{
@@ -1974,6 +2061,15 @@ static struct i2c_board_info __initdata i2c1_info[] = {
 		.platform_data = &l3g4200d_info,
 	},
 #endif
+#if defined (CONFIG_GS_STK831X)
+	{
+	  .type 		  = "gs_stk831x",
+	  .addr 		  = 0x3d,
+	  .flags		  = 0,
+	  .irq			  = STK831X_INT_PIN,
+	  .platform_data  = &stk831x_info,
+	},
+#endif
 
 #if defined (CONFIG_TOUCHSCREEN_AW5209)
     {
@@ -2003,7 +2099,15 @@ static struct i2c_board_info __initdata i2c2_info[] = {
         .addr           = 0x40,
         .flags          = 0,
         .platform_data =&gslx680_info,
-    },
+	},
+#endif
+#if defined (CONFIG_TOUCHSCREEN_ICN850X)
+	{
+		.type          = "chipone-ts",
+		.addr          = 0x48,
+		.flags         = 0,
+		.irq           = TOUCH_INT_PIN,
+	},
 #endif
 };
 #endif
@@ -2090,6 +2194,49 @@ static struct platform_device *devices[] __initdata = {
 extern  void axp_power_off(void);
 #endif
 
+//add by ruan for tr726c power off
+extern int dwc_vbus_status();
+extern int rk29sdk_wifi_power(int on);
+extern int nmc1000_charging_status ; //0 no charging 1 charging
+int nmc1000_gpio_get_value(int gpio_num);
+static void tr726c_shutdown(void)
+{
+    int power_press_cnt=0;
+    int nmc1000_dc_not_in = 1;  // in=0, or 1
+	//turn off wifi  @wbj 2013 7 30
+	#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+	    nmc1000_dc_not_in = nmc1000_gpio_get_value(6);
+	    gpio_set_value(NMC1000_GPIO_RESET_N,!NMC1000_GPIO_RESET_PIN_ENABLE_VALUE);
+            printk(KERN_ERR "%s: dc gpio is %d, and shutdown wifi power pin=%d\n", __FUNCTION__,nmc1000_dc_not_in,gpio_get_value(NMC1000_GPIO_RESET_N));
+            printk("%s-%d: #########  usb status = %d\n", __FUNCTION__, __LINE__,dwc_vbus_status());
+	#else
+	rk29sdk_wifi_power(0);
+	#endif
+    printk("%s-%d: Enter\n", __FUNCTION__, __LINE__);
+    while(1)
+    {
+        // if have not power supply, just return(shutdown)
+	#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+        if( nmc1000_dc_not_in && 0 == dwc_vbus_status())// && 0 == nmc1000_charging_status)
+	#else
+        if((gpio_get_value (rk30_adc_battery_platdata.dc_det_pin) != rk30_adc_battery_platdata.dc_det_level)&&(0== dwc_vbus_status() ))
+	#endif
+        {
+            printk("%s-%d: no power supply, shutdown\n", __FUNCTION__, __LINE__);
+            break;
+        }
+        else
+        {
+		if (1 == dwc_vbus_status())
+		{
+	    		printk("%s-%d: usb charge restart\n", __FUNCTION__, __LINE__);
+                	arm_pm_restart(0, NULL);
+		}else
+                	arm_pm_restart(0, "charge");//power_press_cnt=0;
+        }
+    }
+}
+
 static void rk30_pm_power_off(void)
 {
 #if defined(CONFIG_MFD_TPS65910)
@@ -2114,7 +2261,9 @@ static void rk30_pm_power_off(void)
               act8931_device_shutdown();
 	}
 #endif
-
+	#if defined(CONFIG_TCHIP_MACH_TR726C)
+	tr726c_shutdown();
+	#endif //tr726c
 	gpio_direction_output(POWER_ON_PIN, GPIO_LOW);
 	while(1);
 }
@@ -2135,6 +2284,18 @@ static void __init machine_rk30_board_init(void)
 	rk29sdk_wifi_bt_gpio_control_init();
 #elif defined(CONFIG_WIFI_COMBO_MODULE_CONTROL_FUNC)
     rk29sdk_wifi_combo_module_gpio_init();
+#endif
+#if defined(CONFIG_NMC1XXX_WIFI_MODULE)
+	iomux_set(SPI0_CLK);
+	iomux_set(SPI0_TXD);
+	iomux_set(SPI0_RXD);
+	iomux_set(SPI0_CS0);
+	iomux_set(SPI0_CS1);
+#endif
+#if defined(CONFIG_TCHIP_MACH_TR726C)
+	// gsensor int 
+	iomux_set(GPIO1_A0);
+    	gpio_direction_input(RK30_PIN0_PA0);
 #endif
 }
 
@@ -2172,8 +2333,8 @@ static void __init rk30_reserve(void)
 *	clock
 ************************************************************/
 static struct cpufreq_frequency_table dvfs_arm_table[] = {
-	{.frequency = 312 * 1000,       .index = 950 * 1000},
-	{.frequency = 504 * 1000,       .index = 1000 * 1000},
+	{.frequency = 312 * 1000,       .index = 1200 * 1000},
+	{.frequency = 504 * 1000,       .index = 1200 * 1000},
 	{.frequency = 816 * 1000,       .index = 1200 * 1000},
 	{.frequency = 912 * 1000,       .index = 1250 * 1000},
 	{.frequency = 1008 * 1000,      .index = 1350 * 1000},
