@@ -46,6 +46,16 @@ choice
 
 	config WIFI_NONE
 	  bool "No WiFi"
+	  
+	config NMC1XXX_WIFI_MODULE
+	depends on WLAN_80211 && MMC
+        tristate "Newportmedia NMC1XXX wireless cards support"
+        select WIRELESS_EXT
+        select WEXT_PRIV
+        ---help---
+          This module adds support for wireless adapters based on
+          NMC1000 chipset.
+
 
 	config BCM4329
 	  depends on WLAN_80211 && MMC
@@ -124,6 +134,8 @@ source "drivers/net/wireless/rtl8723bs/Kconfig"
 source "drivers/net/wireless/esp8089/Kconfig"
 source "drivers/net/wireless/rkwifi/Kconfig"
 endchoice
+
+source "drivers/net/wireless/nmi/Kconfig"
 
 choice	
 	depends on RKWIFI && WLAN_80211
