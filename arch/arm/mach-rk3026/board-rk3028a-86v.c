@@ -1936,6 +1936,13 @@ static void rk30_pm_power_off(void)
               act8931_device_shutdown();
 	}
 #endif
+#ifdef CONFIG_RK30_PWM_REGULATOR
+	if(gpio_get_value (DC_DET_PIN) == GPIO_LOW)
+	{
+		       printk("enter restart===========\n");
+			   arm_pm_restart(0, "charge");
+    }
+#endif
 
 	gpio_direction_output(POWER_ON_PIN, GPIO_LOW);
 	while(1);
