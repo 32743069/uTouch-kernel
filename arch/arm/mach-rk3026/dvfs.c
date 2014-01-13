@@ -79,17 +79,17 @@ static struct notifier_block rk_dvfs_clk_notifier = {
 };
 
 static struct cpufreq_frequency_table rk3026_arm_adjust_table_v0[] = {
-	{.frequency = 312 * 1000,       .index = 250 * 1000},
+	{.frequency = 312 * 1000,       .index = 200 * 1000},
 	{.frequency = 504 * 1000,       .index = 200 * 1000},
-	{.frequency = 816 * 1000,       .index = 50  * 1000},
-	{.frequency = 912 * 1000,       .index = 100 * 1000},
+	//{.frequency = 816 * 1000,       .index = 50  * 1000},
+	{.frequency = 912 * 1000,       .index = 50 * 1000},
 	{.frequency = CPUFREQ_TABLE_END},
 };
 
 static struct cpufreq_frequency_table rk3026_arm_adjust_table_v1[] = {
 	{.frequency = 504 * 1000,       .index = 50 * 1000},
 	{.frequency = 816 * 1000,       .index = 75  * 1000},
-	{.frequency = 912 * 1000,       .index = 100 * 1000},
+	{.frequency = 912 * 1000,       .index = 50 * 1000},
 	{.frequency = 1008 * 1000,       .index = 50 * 1000},
 	{.frequency = CPUFREQ_TABLE_END},
 };
