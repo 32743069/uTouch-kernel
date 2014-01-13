@@ -83,6 +83,7 @@ module_param_named(dbg_level, rk30_battery_dbg_level, int, 0644);
 #endif
 
 
+#define BATT_FILENAME "/data/bat_last_capacity.dat"
 
 
 #define BATTERY_APK 
@@ -100,12 +101,28 @@ char gDischargeFlag[4] = {"on "};
 #define BATT_MAX_VOL_VALUE                             4120               	//Full  charge volate	 
 #define BATT_ZERO_VOL_VALUE                            3600//3500              	//power down voltage
 #define BATT_NOMAL_VOL_VALUE                         3800            
-
+#if defined(CONFIG_TCHIP_MACH_TR726C)
+#define BATT_ZERO_VOL_VALUE                            3550//3500              	//power down voltage
+#endif
+/*
 static int batt_table[2*BATT_NUM+6] =
 {
 	0x4B434F52,0x7461625F,0x79726574,0,100,100,
 	3496, 3548, 3599, 3626, 3655, 3697, 3751, 3812, 3877, 3949, 4030,  //discharge
 	3540, 3785, 3842, 3861, 3915, 3980, 4041, 4135, 4169, 4175, 4185	  //charge
+};
+*/
+static int batt_table[2*BATT_NUM+6] =
+{
+#if defined (CONFIG_TCHIP_MACH_TR726C)
+	0x4B434F52,0x7461625F,0x79726574,0,100,100,
+	3450, 3550, 3600, 3640, 3680, 3720, 3760, 3800, 3850, 3900, 3950,//, 4020, 
+	3670, 3770, 3820, 3850, 3880, 3920, 3960, 4000, 4050, 4110, 4180// 4160
+#else
+	0x4B434F52,0x7461625F,0x79726574,0,100,100,
+	3621, 3712, 3744, 3792, 3817, 3843, 3885, 3931, 3996, 4060, 4135,  //discharge
+	3773, 3867, 3896, 3943, 3960, 3984, 4025, 4078, 4142, 4207, 4265   //charge
+#endif
 };
 #define adc_to_voltage(adc_val) ((adc_val * BAT_DEFINE_VALUE * (batt_table[4] +batt_table[5])) / (1024 *batt_table[5]))
 #else
@@ -217,7 +234,6 @@ struct rk30_adc_battery_data {
 
 	int 			    lower_power_flag;
 	int			    time_to_full;
-	int			    is_data_dir;
 
 };
 static struct rk30_adc_battery_data *gBatteryData;
@@ -232,6 +248,79 @@ extern int dwc_otg_check_dpdm(void);
 static int  is_charge_ok(struct rk30_adc_battery_data *bat);
 static void rk30_adc_battery_voltage_samples(struct rk30_adc_battery_data *bat);
 
+#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+suspend_state_t get_suspend_state(void);
+int nmc1000_charging_status = 0 ; //0 no charging 1 charging
+void rk28_send_wakeup_key(void);
+static int nmc1000_dc_irq_init = 0;
+int nmc1000_gpio_get_value(int gpio_num);
+int nmc1000_battery_get_status()
+{
+	int val = nmc1000_gpio_get_value(6);
+	if( val != -1 ){
+		if(rk30_battery_dbg_level)
+			printk(KERN_ERR "###########3  %s : dc status %d\n",__func__,val);
+		if( get_suspend_state() == PM_SUSPEND_MEM && val==nmc1000_charging_status)
+			rk28_send_wakeup_key();
+		nmc1000_charging_status = !val;
+		//nmc1000_charging_status = val;
+	}
+	return nmc1000_charging_status;
+}
+static irqreturn_t ncm1000_dc_wakeup(int irq, void *dev_id)
+{   
+	disable_irq_nosync(irq);
+
+printk (KERN_ERR "########3  %s\n",__func__);
+	//nmc1000_charging_status = 1;
+	rk28_send_wakeup_key();//wakeup screen
+
+	//enable_irq_wake(irq);  
+	return IRQ_HANDLED;
+}
+int tchip_dc_det_irq_init(unsigned int irq_pin, unsigned long irq_flag)
+{
+	int ret, retry =5;
+	int irq = gpio_to_irq(irq_pin);	        
+
+	if ( 0 != gpio_request(irq_pin,"dc_pin")){
+		printk (KERN_ERR "########3  %s, request gpio err\n",__func__);
+		return -EINVAL;
+	}
+printk (KERN_ERR "########3  %s\n",__func__);
+	//gpio_get_value (pdata->dc_det_pin) ? IRQF_TRIGGER_FALLING : IRQF_TRIGGER_RISING;
+	ret = request_irq(irq, ncm1000_dc_wakeup, irq_flag, "nmc_charge_irq", NULL);
+#if 1
+	while( ret && retry){
+	    	printk("######33  failed to request nmc1000 dc det irq\n");
+		free_irq(irq, NULL);
+		ret = request_irq(irq, ncm1000_dc_wakeup, irq_flag, "nmc_charge_irq", NULL);
+		retry--;
+ 	}
+#endif
+	if (ret) {
+		ret = -EINVAL;
+	    	printk("failed to request nmc1000 dc det irq\n");
+	    	return ret;
+ 	}
+	enable_irq_wake(irq); 
+	nmc1000_dc_irq_init = 1;
+	return 0;
+}
+int tchip_dc_det_irq_release(unsigned int irq_pin)
+{	    	
+	int irq = gpio_to_irq(irq_pin);	        
+
+printk (KERN_ERR "########3  %s\n",__func__);
+	if( nmc1000_dc_irq_init == 1 ){
+		disable_irq_wake(irq);
+		disable_irq(irq);
+		free_irq(irq, NULL);
+		gpio_free(irq_pin);
+		nmc1000_dc_irq_init = 0;
+	}
+}
+#endif
 
 #ifdef  BATTERY_APK
 //#define BAT_ADC_TABLE_LEN               11
@@ -366,16 +455,8 @@ static int rk30_adc_battery_load_capacity(void)
 {
 	char value[4];
 	int* p = (int *)value;
-	long fd, fdir;
-	
-	fdir = sys_open("/metadata", O_RDONLY | O_DIRECTORY,0 );
-	if (fdir <0){
-		fd = sys_open("/data/bat_last_capacity.dat",O_RDONLY,0);
-		gBatteryData ->is_data_dir =1;
-	}else{
-		fd = sys_open("/metadata/bat_last_capacity.dat",O_RDONLY,0);
-		gBatteryData ->is_data_dir = 0;
-	}
+	long fd = sys_open(BATT_FILENAME,O_RDONLY,0);
+
 	if(fd < 0){
 		DBG("rk30_adc_battery_load_capacity: open file /data/bat_last_capacity.dat failed\n");
 		return -1;
@@ -391,11 +472,7 @@ static void rk30_adc_battery_put_capacity(int loadcapacity)
 {
 	char value[4];
 	int* p = (int *)value;
-	long fd;
-	if ( gBatteryData ->is_data_dir == 1)
-		fd = sys_open("/data/bat_last_capacity.dat",O_CREAT | O_RDWR,0);
-	else
-		fd = sys_open("/metadata/bat_last_capacity.dat",O_CREAT | O_RDWR,0);
+	long fd = sys_open(BATT_FILENAME,O_CREAT | O_RDWR,0);
 
 	if(fd < 0){
 		DBG("rk30_adc_battery_put_capacity: open file /data/bat_last_capacity.dat failed\n");
@@ -461,6 +538,9 @@ static int  get_ac_status(struct rk30_adc_battery_data *bat){
 		}
 	}
 
+	#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+	//status = nmc1000_battery_get_status();
+	#endif
 	return status;
 }
 // state of charge  --- charge-display
@@ -526,8 +606,13 @@ static int rk_battery_get_status(struct rk30_adc_battery_data *bat)
 	int ac_ac_charging = 0, usb_ac_charging = 0;
 	int i=0;
 
+
 #if defined (CONFIG_BATTERY_RK30_AC_CHARGE)
+	#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+	ac_ac_charging = nmc1000_battery_get_status();
+	#else
 	ac_ac_charging = get_ac_status(bat);
+	#endif
 	if(1 == ac_ac_charging)
 		charge_on = 1;
 #endif
@@ -724,8 +809,10 @@ static int rk30_adc_battery_status_samples(struct rk30_adc_battery_data *bat)
 				}else if(bat->bat_capacity == 99)
 				{
 					if(get_seconds() - bat->time_to_full > 1800)
+					{
 						bat->bat_capacity = 100;
 						bat->time_to_full = 0;
+					}
 
 				}
 
@@ -920,7 +1007,7 @@ static int rk30_adc_battery_voltage_to_capacity(struct rk30_adc_battery_data *ba
 		p = batt_table;
 
 	if (1 == bat->charge_level){  //charge
-		if(0 == bat->start_voltage_status ){
+		if(1){
 			if(BatVoltage >= (p[2*BATT_NUM +5])){
 				capacity = 100;
 			}	
@@ -1261,22 +1348,22 @@ static void rk_battery_charger(struct rk30_adc_battery_data *bat)
 				#endif
 				if(capacity < 20){
 					if(capacity + 3 > bat->bat_capacity  )
-						timer_of_discharge_sample = DISCHARGE_MIN_SECOND -5;  //5s
+						timer_of_discharge_sample = DISCHARGE_MIN_SECOND -40;  //20s
 					else if(capacity  + 7 > bat->bat_capacity )
-						timer_of_discharge_sample = DISCHARGE_MIN_SECOND -10; //10s
+						timer_of_discharge_sample = DISCHARGE_MIN_SECOND -50; //10s
 					else if(capacity  + 10> bat->bat_capacity )
-						timer_of_discharge_sample = DISCHARGE_MIN_SECOND -25; // 13
+						timer_of_discharge_sample = DISCHARGE_MIN_SECOND -50; // 13
 					else
-						timer_of_discharge_sample = DISCHARGE_MIN_SECOND - 35; // 13
+						timer_of_discharge_sample = DISCHARGE_MIN_SECOND - 55; // 13
 				}else{
 					if(capacity + 3 > bat->bat_capacity  )
 						timer_of_discharge_sample = DISCHARGE_MIN_SECOND -5;  //5s
 					else if(capacity  + 7 > bat->bat_capacity )
-						timer_of_discharge_sample = DISCHARGE_MIN_SECOND -10; //10s
+						timer_of_discharge_sample = DISCHARGE_MIN_SECOND -20; //10s
 					else if(capacity  + 10> bat->bat_capacity )
-						timer_of_discharge_sample = DISCHARGE_MIN_SECOND - 15; // 13
+						timer_of_discharge_sample = DISCHARGE_MIN_SECOND - 40; // 13
 					else
-						timer_of_discharge_sample = DISCHARGE_MIN_SECOND - 20; // 13
+						timer_of_discharge_sample = DISCHARGE_MIN_SECOND - 45; // 13
 
 			}
 			if (++(bat->gBatCapacityDisChargeCnt) >= timer_of_discharge_sample){
@@ -1338,8 +1425,9 @@ static void rk30_adc_battery_poweron_capacity_check(struct rk30_adc_battery_data
 	int new_capacity, old_capacity;
      	 int cnt = 50 ;
 
+	
 	new_capacity = bat ->bat_capacity;
-		
+
 	while( cnt -- ){
 	    old_capacity = rk30_adc_battery_load_capacity();
 	    if( old_capacity >= 0 ){
@@ -1351,24 +1439,37 @@ static void rk30_adc_battery_poweron_capacity_check(struct rk30_adc_battery_data
 	if ((old_capacity < 0) || (old_capacity > 100)){
 		old_capacity = new_capacity;
 	}    
+	bat->bat_capacity = old_capacity;
 
+	#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+	if(0){
+	}
+	#else
 	if (bat ->bat_status == POWER_SUPPLY_STATUS_FULL){
 		if (new_capacity > 80){
 			bat ->bat_capacity = 100;
 		}
 	}
+	#endif
 	else if (bat ->bat_status != POWER_SUPPLY_STATUS_NOT_CHARGING){
 	//chargeing state
-
+		#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+		bat ->bat_capacity = (old_capacity < 10) ?(old_capacity+2):old_capacity;
+		#else
 		if( bat  ->pdata->is_reboot_charging == 1)
 			bat ->bat_capacity = (old_capacity < 10) ?(old_capacity+2):old_capacity;
 		else
 			bat ->bat_capacity = (new_capacity > old_capacity) ? new_capacity : old_capacity;
+		#endif
 	}else{
+		#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+		bat ->bat_capacity = (new_capacity < old_capacity) ? new_capacity : old_capacity;  //avoid the value of capacity increase 
+		#else
 		if(new_capacity > old_capacity + 50 )
 			bat ->bat_capacity = old_capacity + 5;
 		else
 			bat ->bat_capacity = (new_capacity < old_capacity) ? new_capacity : old_capacity;  //avoid the value of capacity increase 
+		#endif
 		if(bat->bat_capacity == 100)
 			bat->bat_capacity = 99;
 		if(bat->bat_capacity == 0)
@@ -1516,7 +1617,7 @@ static int rk30_adc_battery_get_health(struct rk30_adc_battery_data *bat)
 
 static int rk30_adc_battery_get_present(struct rk30_adc_battery_data *bat)
 {
-	return 1;//(bat->bat_voltage < BATT_MAX_VOL_VALUE) ? 0 : 1;
+	return (bat->bat_voltage < BATT_MAX_VOL_VALUE) ? 0 : 1;
 }
 
 static int rk30_adc_battery_get_voltage(struct rk30_adc_battery_data *bat)
@@ -1655,7 +1756,7 @@ static int rk30_adc_battery_suspend(struct platform_device *dev, pm_message_t st
 	data ->suspend_capacity = data->bat_capacity;
 	data ->suspend_time = get_seconds();
 	cancel_delayed_work(&data ->delay_work);
-	
+//tchip_dc_det_irq_init(RK30_PIN1_PA0,IRQF_TRIGGER_FALLING);//IRQF_TRIGGER_FALLING : IRQF_TRIGGER_RISING);
 	if( data ->pdata->batt_low_pin != INVALID_GPIO){
 		
 		irq = gpio_to_irq(data ->pdata->batt_low_pin);
@@ -1674,6 +1775,7 @@ static int rk30_adc_battery_resume(struct platform_device *dev)
         	wake_lock_timeout(&batt_wake_lock_detect_lowpower,15*HZ);
         	data->bat_change  = 1;
 	}
+//tchip_dc_det_irq_release(RK30_PIN1_PA0);
 	data ->resume_time = get_seconds();
 	data ->resume = true;
 	queue_delayed_work(data->wq, &data ->delay_work, msecs_to_jiffies(100));
@@ -1696,7 +1798,32 @@ static void rk30_adc_battery_timer_work(struct work_struct *work)
 {
 struct rk30_adc_battery_data  *bat = container_of((work), \
 		struct rk30_adc_battery_data, delay_work);
+static int fd_log = -1;
+struct tm tm;
 
+	bat->stop_check = 1;
+	if( 1 == bat ->lower_power_flag ){
+			bat ->bat_capacity = 0;
+			bat ->bat_change =1;
+	}
+
+
+	bat ->charge_level = rk_battery_get_status(bat);
+	DBG("bat ->charge_level =%d\n", bat ->charge_level);
+	rk30_adc_battery_status_samples(bat);
+	rk30_adc_battery_voltage_samples(bat);
+	rk30_adc_battery_capacity_samples(bat);
+
+	if (bat ->poweron_check){   
+		bat ->poweron_check = 0;
+		rk30_adc_battery_poweron_capacity_check(bat);
+	#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+		if((bat->bat_voltage <= BATT_ZERO_VOL_VALUE)&&(bat->bat_status == POWER_SUPPLY_STATUS_NOT_CHARGING )){
+			mdelay (10);
+			kernel_power_off();
+		}
+	#endif
+	}
 #ifdef CONFIG_PM
 	if (bat ->resume) {
 	//	if( (bat->resume_time - bat->suspend_time) >= 1800 )
@@ -1707,22 +1834,6 @@ struct rk30_adc_battery_data  *bat = container_of((work), \
 		bat ->bat_change =1;
 	}
 #endif
-	bat->stop_check = 1;
-	if( 1 == bat ->lower_power_flag ){
-			bat ->bat_capacity = 0;
-			bat ->bat_change =1;
-	}
-	if (bat ->poweron_check){   
-		bat ->poweron_check = 0;
-		rk30_adc_battery_poweron_capacity_check(bat);
-	}
-
-	bat ->charge_level = rk_battery_get_status(bat);
-	DBG("bat ->charge_level =%d\n", bat ->charge_level);
-	rk30_adc_battery_status_samples(bat);
-	rk30_adc_battery_voltage_samples(bat);
-	rk30_adc_battery_capacity_samples(bat);
-
 	if( 0 == bat ->pdata ->charging_sleep){
 		if( 1 == bat->charge_level){  // charge
 			if(0 == bat->status_lock ){			
@@ -1758,10 +1869,25 @@ struct rk30_adc_battery_data  *bat = container_of((work), \
 
 	}
 
-	//if (rk30_battery_dbg_level){
+	if (rk30_battery_dbg_level){
 		if (++AdcTestCnt >= 2)
 			{
+	char buf[256] = {0};
+	time_to_tm(get_seconds(), 0, &tm);
 			AdcTestCnt = 0;
+#if 1
+    	    if (fd_log < 0) {
+                        fd_log = sys_open("/data/local/bat.log", O_CREAT | O_APPEND | O_RDWR, 0);
+                        printk("create /data/local/bat.log, fd_log = %d\n", fd_log);
+           } else {
+                    sprintf(buf, "[%02d:%02d:%02d], bat_status = %d, RealAdc = %d, RealVol = %d, gBatVol = %d, gBatCap = %d, RealCapacity = %d,\
+                                    dischargecnt = %d, chargecnt = %d\n", 
+                            tm.tm_hour, tm.tm_min, tm.tm_sec, bat->bat_status, bat ->adc_val, rk_adc_voltage(bat, bat ->adc_val),
+                            bat->bat_voltage, bat->bat_capacity, bat ->capacitytmp, bat ->gBatCapacityDisChargeCnt, bat ->gBatCapacityChargeCnt);
+                    int ret = sys_write(fd_log, (const char __user *)buf, strlen(buf));
+                    printk("undate charge info, ret = %d, len=%d\n", ret, strlen(buf));
+          }
+#endif 
 
 			DBG("Status = %d, RealAdcVal = %d, RealVol = %d,gBatVol = %d, gBatCap = %d, RealCapacity = %d, batt_dischargecnt = %d\n,  chargecnt = %d,ac_count = %d, usb_count =%d ,usb_dischargecount =%d\n", 
 			bat ->bat_status, bat ->adc_val, rk_adc_voltage(bat, bat ->adc_val), 
@@ -1769,7 +1895,8 @@ struct rk30_adc_battery_data  *bat = container_of((work), \
 			bat ->gBatCapacityacChargeCnt, bat ->gBatCapacityusbChargeCnt, bat ->gBatCapacityusbdisChargeCnt);
 
 		}
-	//}
+	}
+
 	queue_delayed_work(bat ->wq, &bat ->delay_work, msecs_to_jiffies(TIMER_MS_COUNTS));
 
 }
@@ -2118,12 +2245,20 @@ static int battery_notifier_call(struct notifier_block *nb,
 	switch (event) {
 		case LCDC_ON:
 			DBG("LCDC on \n");
+#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE) 
+
+#else
 			rk_lowerpower_check(bat);//for lower power protect
+#endif
 			break;
 
 		case BACKLIGHT_ON:
 			DBG("display \n");
+#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE) 
+
+#else
 			poweron_lowerpoer_handle(bat);
+#endif
 			break;
 		default:
 			return NOTIFY_OK;
