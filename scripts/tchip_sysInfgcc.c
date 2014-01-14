@@ -22,12 +22,28 @@
 
 #define	MKLINUXLOG
 #include "../include/generated/autoconf.h"
-#include "../drivers/video/display/screen/screen.h"
+//#include "../drivers/video/display/screen/screen.h"
 //#include "../arch/arm/mach-rk30/include/mach/irqs.h"
 //#include "../arch/arm/mach-rk30/include/mach/gpio.h"
 #include "../include/linux/tchip_sysinf.h"
 //#include "../arch/arm/mach-rk30/include/mach/rk29_sensor.h"
 //#include "../drivers/media/video/rk29_sensor.c"
+
+
+ //add by ruan
+#include "../drivers/video/rockchip/screen/lcd_E242868_rk3028_86v.c"
+ #define OUT_P888            0   //24bit screen,connect to lcdc D0~D23
+ #define OUT_P666            1   //18bit screen,connect to lcdc D0~D17
+ #define OUT_P565            2 
+ #define OUT_S888x           4
+ #define OUT_CCIR656         6
+ #define OUT_S888            8
+ #define OUT_S888DUMY        12
+ #define OUT_P16BPP4         24
+ #define OUT_D888_P666       0x21 //18bit screen,connect to lcdc D2~D7, D10~D15, D18~D23
+ #define OUT_D888_P565       0x22
+ #define PIN_BASE 0
+ //end add by ruan
 
 #define PIN_BASE 0
 
@@ -375,8 +391,8 @@ static void write_Inf(void)
 	//输入屏的信处
 	fputs("//调屏信息 140:36\n", out);
 	sprintf(hardwareStr, "	0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,\n",
-			OUT_FACE, OUT_CLK & 0xff, (OUT_CLK >> 8) & 0xff, (OUT_CLK >> 16)
-					& 0xff, (OUT_CLK >> 24) & 0xff, LCDC_ACLK & 0xff);
+			OUT_FACE, DCLK & 0xff, (DCLK >> 8) & 0xff, (DCLK >> 16)
+					& 0xff, (DCLK >> 24) & 0xff, LCDC_ACLK & 0xff);
 	fputs(hardwareStr, out);
 
 	sprintf(hardwareStr, "	0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,\n",

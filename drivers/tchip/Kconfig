@@ -51,11 +51,12 @@ choice
 		bool "TR726, Public 7' Machine"
 		select TCHIP_MACHINE
 
+	config TCHIP_MACH_TR726C
+		bool "TR726C ,Public 7' Machine "
+		select TCHIP_MACHINE
+
 endchoice
 
-config TCHIP_MACH_TR726C
-	depends on TCHIP_MACH_TR726
-	bool "TR726C ,Public 7' Machine rebase TR726 "
 
 #caixx add begin
 menu "T-Chip Products Tool adapt IC Select"
