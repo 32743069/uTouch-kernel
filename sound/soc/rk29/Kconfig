@@ -289,6 +289,7 @@ config SND_RK_SOC_RK3026
 	  Say Y if you want to add support for SoC audio on rockchip
 	  with the RK3026 internal codec.
 
+
 config SND_RK_SOC_RK3028A_PHONE
         tristate "SoC I2S Audio support for rockchip - RK3028A(PHONE)"
         depends on SND_RK29_SOC && ARCH_RK3026
@@ -298,6 +299,20 @@ config SND_RK_SOC_RK3028A_PHONE
         help
           Say Y if you want to add support for SoC audio on rockchip
           with the RK3028A internal codec.
+
+
+if  SND_RK_SOC_RK3026
+choice
+	bool "with cap or capless"
+	default SND_CAP
+		config  SND_CAP
+		tristate "output with cap"
+		config  SND_CAPLESS
+		tristate "output capless"
+
+endchoice
+endif
+
 
 
 if SND_RK29_SOC_I2S_2CH || SND_RK29_SOC_I2S_8CH || SND_RK_SOC_I2S2_2CH  
