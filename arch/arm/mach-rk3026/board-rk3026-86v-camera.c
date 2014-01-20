@@ -34,8 +34,8 @@ Comprehensive camera device registration:
                           
 */
 #if defined(CONFIG_TCHIP_MACH_TR726C)
-#define TC_CAMERA_BACK_DN_PIN 0 
-#define TC_CAMERA_FRONT_DN_PIN 0
+#define TC_CAMERA_BACK_DN_PIN INVALID_GPIO 
+#define TC_CAMERA_FRONT_DN_PIN INVALID_GPIO
 #else
 #define TC_CAMERA_BACK_DN_PIN RK30_PIN0_PA1
 #define TC_CAMERA_FRONT_DN_PIN RK30_PIN3_PB3
@@ -165,31 +165,67 @@ static struct rkcamera_platform_data new_camera[] = {
                         1,
                         0),
 */
-   new_camera_device(RK29_CAM_SENSOR_SP0838,
-                        back,
-                        RK30_PIN0_PA1,
-                        0,
-                        0,
-                        1,
-                        0),
-
+    new_camera_device_ex(RK29_CAM_SENSOR_SP0838,
+			    back,
+			    0,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    TC_CAMERA_BACK_DN_PIN,
+			    CONS(RK29_CAM_SENSOR_SP0838,_PWRDN_ACTIVE),
+			    false,
+			    CONS(RK29_CAM_SENSOR_SP0838,_FULL_RESOLUTION),
+			    0,
+			    1,
+			    250000,
+			    CONS(RK29_CAM_SENSOR_SP0838,_I2C_ADDR),
+			    0,
+			    24),
 
        //##############3   fornt Camera
-   new_camera_device(RK29_CAM_SENSOR_GC0308,
+/*   new_camera_device(RK29_CAM_SENSOR_GC0308,
                         front,
                         TC_CAMERA_FRONT_DN_PIN,
                         0,
                         0,
                         1,
-                        0),
+                        0),*/
+    new_camera_device_ex(RK29_CAM_SENSOR_GC0308,
+			    front,
+			    0,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    TC_CAMERA_FRONT_DN_PIN,
+			    CONS(RK29_CAM_SENSOR_GC0308,_PWRDN_ACTIVE),
+			    false,
+			    CONS(RK29_CAM_SENSOR_GC0308,_FULL_RESOLUTION),
+			    0,
+			    1,
+			    250000,
+			    CONS(RK29_CAM_SENSOR_GC0308,_I2C_ADDR),
+			    0,
+			    24),
+    new_camera_device_ex(RK29_CAM_SENSOR_SP0838,
+			    front,
+			    0,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    TC_CAMERA_FRONT_DN_PIN,
+			    CONS(RK29_CAM_SENSOR_SP0838,_PWRDN_ACTIVE),
+			    false,
+			    CONS(RK29_CAM_SENSOR_SP0838,_FULL_RESOLUTION),
+			    0,
+			    1,
+			    250000,
+			    CONS(RK29_CAM_SENSOR_SP0838,_I2C_ADDR),
+			    0,
+			    24),
 
-   new_camera_device(RK29_CAM_SENSOR_SP0838,
-                        front,
-                        TC_CAMERA_FRONT_DN_PIN,
-                        0,
-                        0,
-                        1,
-                        0),
     new_camera_device_end
 #endif
 };
@@ -370,6 +406,7 @@ static struct rkcamera_platform_data new_camera[] = {
 #define CONFIG_SENSOR_RESET_IOCTL_USR	   0
 #define CONFIG_SENSOR_POWERDOWN_IOCTL_USR  1 	    
 #define CONFIG_SENSOR_FLASH_IOCTL_USR	   0
+#define CONFIG_SENSOR_POWERDNACTIVE_LEVEL_PMU  0
 int nmc1000_gpio_get_value(int gpio_num);
 void nmc1000_gpio_set_value(int gpio_num,int v);
 //1 -> SPK_CTL
@@ -381,9 +418,7 @@ static int tr726c_powerdn_usr_cb(struct rk29camera_gpio_res *res,int level)
 	int pin=3;
 	//if(strcmp(res->dev_name,"gc0308_front") == 0) 
 	//	pin = 4;
-	printk(KERN_ERR "#########  camera pin is %d \n",pin);
-	//set gpio 0 is open
-	printk(KERN_ERR "#########  camera pin set %d\n",level);
+	printk(KERN_ERR "#########  camera pin is %d, level=%d \n",pin,level);
 
 	nmc1000_gpio_set_value(pin, level);
 	printk(KERN_ERR "#########3 read cameara pin %d\n",nmc1000_gpio_get_value(pin));
