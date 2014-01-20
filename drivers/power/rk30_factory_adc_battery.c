@@ -1800,15 +1800,24 @@ struct rk30_adc_battery_data  *bat = container_of((work), \
 		struct rk30_adc_battery_data, delay_work);
 static int fd_log = -1;
 struct tm tm;
-
+#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+static int nmc_dc_delay_times = 0;
+#endif
 	bat->stop_check = 1;
 	if( 1 == bat ->lower_power_flag ){
 			bat ->bat_capacity = 0;
 			bat ->bat_change =1;
 	}
 
-
+#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+	if( nmc_dc_delay_times <= 0 ){
+		bat ->charge_level = rk_battery_get_status(bat);
+		nmc_dc_delay_times = 2;
+	}else
+		nmc_dc_delay_times --;
+#else
 	bat ->charge_level = rk_battery_get_status(bat);
+#endif
 	DBG("bat ->charge_level =%d\n", bat ->charge_level);
 	rk30_adc_battery_status_samples(bat);
 	rk30_adc_battery_voltage_samples(bat);
