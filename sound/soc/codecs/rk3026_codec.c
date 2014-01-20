@@ -105,7 +105,22 @@ static void rk3026_codec_capture_work(struct work_struct *work);
 static DECLARE_DELAYED_WORK(capture_delayed_work, rk3026_codec_capture_work);
 static int rk3026_codec_work_capture_type = RK3026_CODEC_WORK_NULL;
 static bool rk3026_for_mid = 1, is_hdmi_in = false;
+#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+void nmc1000_gpio_set_value(int gpio_num,int v);
+int nmc1000_gpio_get_value(int gpio_num);
+void tr726c_set_spkctl_en(int en)
+{
+ 	if( en ){ //open 
+		//ncm1000_gpio_set_value(int gpio_num, int level);
+		nmc1000_gpio_set_value(1, 1);
+		printk(KERN_ERR "#########3 read spk pin %d\n",nmc1000_gpio_get_value(1));
+ 	}else{
 
+		nmc1000_gpio_set_value(1, 0);
+		printk(KERN_ERR "#########3 read spk pin %d\n",nmc1000_gpio_get_value(1));
+ 	}
+}
+#endif
 static int rk3026_get_parameter(void)
 {
 	int val;
@@ -1728,7 +1743,10 @@ static int rk3026_codec_power_up(int type)
 			 RK3026_MUXINR_F_INR | RK3026_MUXINL_F_INL);
 		
 	}
-
+		#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+		tr726c_set_spkctl_en(1);
+		msleep(200);
+		#endif
 	return 0;
 }
 
@@ -1741,7 +1759,10 @@ static int rk3026_codec_power_down(int type)
 		printk("%s : rk3026_priv or rk3026_priv->codec is NULL\n", __func__);
 		return -EINVAL;
 	}
-	
+		#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+		tr726c_set_spkctl_en(0);
+		msleep(200);
+		#endif	
 	printk("%s : power down %s%s%s\n", __func__,
 		type == RK3026_CODEC_PLAYBACK ? "playback" : "",
 		type == RK3026_CODEC_CAPTURE ? "capture" : "",
