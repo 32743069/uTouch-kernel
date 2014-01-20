@@ -1223,7 +1223,7 @@ void custom_chip_sleep_manually(void)
 	uint32_t val32;
 	NMI_Uint32 u32SleepTime = INFINITE_SLEEP_TIME;
 
-	printk(">> Custom Chip Sleep manually\n");
+	//printk(">> Custom Chip Sleep manually\n");
 	if(genuChipPSstate != CHIP_WAKEDUP)
 	{
 		/* chip is already sleeping. Do nothing */

@@ -2868,7 +2868,7 @@ void nmc1000_gpio_set_value(int gpio_num,int v)
 	uint32_t is_mac_open = g_mac_open;
 	uint32_t mac_state_changed = 0;
 		
-	printk(">> GPIO_SET[%d]: %d -mac_open: %d\n",gpio_num,v,is_mac_open);
+	PRINT_D(TX_DBG,">> GPIO_SET[%d]: %d -mac_open: %d\n",gpio_num,v,is_mac_open);
 	if(gpio_num != 1 && gpio_num != 3 && gpio_num != 4)
 	{
 		printk("[nmc1000] GPIO number is out of range\n");
@@ -2911,7 +2911,7 @@ void nmc1000_gpio_set_value(int gpio_num,int v)
 	if(!g_mac_open)
 		custom_chip_sleep_manually();
 
-	printk("<<GPIO_Set\n");
+	PRINT_D(TX_DBG,"<<GPIO_Set\n");
 	if(mac_state_changed != 0)
 		custom_unlock_bus(g_mac_open);
 
@@ -2925,7 +2925,7 @@ int nmc1000_gpio_get_value(int gpio_num)
 	uint32_t reg = 0;
 	uint32_t is_mac_open = g_mac_open;
 	uint32_t mac_state_changed = 0;
-	printk(">> GPIO_GET[%d] - mac_open:%d \n",gpio_num,is_mac_open);
+	PRINT_D(TX_DBG,">> GPIO_GET[%d] - mac_open:%d \n",gpio_num,is_mac_open);
 
 	if(gpio_num != 1 && gpio_num != 3 && gpio_num != 4 && gpio_num != 6)
 	{
@@ -2983,7 +2983,7 @@ int nmc1000_gpio_get_value(int gpio_num)
 
 	if(mac_state_changed != MAC_STATE_OPEN_CLOSE)
 		custom_unlock_bus(is_mac_open);
-	printk("<<GPIO_Get [%d]: %d\n",gpio_num,reg);
+	PRINT_D(TX_DBG,"<<GPIO_Get [%d]: %d\n",gpio_num,reg);
 	return ((reg)? 1: 0);	
 }
 
