@@ -314,7 +314,6 @@ endchoice
 endif
 
 
-
 if SND_RK29_SOC_I2S_2CH || SND_RK29_SOC_I2S_8CH || SND_RK_SOC_I2S2_2CH  
 choice
   bool "Set i2s type"
