@@ -50,7 +50,7 @@ module_param(debug, int, S_IRUGO|S_IWUSR);
  *  31: 6dB
  *  Step: 1.5dB
 */
-#define  OUT_VOLUME    31//0~31
+#define  OUT_VOLUME    26//0~31
 
 /* capture vol set
  * 0: -18db
@@ -1712,6 +1712,65 @@ static struct rk3026_reg_val_typ capture_power_down_list[] = {
 };
 #define RK3026_CODEC_CAPTURE_POWER_DOWN_LIST_LEN ARRAY_SIZE(capture_power_down_list)
 
+int rk3026_codec_out_volume = OUT_VOLUME;
+int rk3026_codec_cap_volume = CAP_VOL;
+
+static u32 rk3026_codec_strtol(const char *nptr, int base)
+{
+	u32 ret;
+	if(!nptr || (base!=16 && base!=10 && base!=8))
+	{
+
+		printk("%s(): NULL pointer input\n", __FUNCTION__);
+		return -1;
+	}
+	for(ret=0; *nptr; nptr++)
+	{
+
+
+		if((base==16 && *nptr>='A' && *nptr<='F') ||
+			(base==16 && *nptr>='a' && *nptr<='f') ||
+			(base>=10 && *nptr>='0' && *nptr<='9') ||
+			(base>=8 && *nptr>='0' && *nptr<='7') )
+		{
+			ret *= base;
+			if(base==16 && *nptr>='A' && *nptr<='F')
+				ret += *nptr-'A'+10;
+			else if(base==16 && *nptr>='a' && *nptr<='f')
+				ret += *nptr-'a'+10;
+			else if(base>=10 && *nptr>='0' && *nptr<='9')
+				ret += *nptr-'0';
+			else if(base>=8 && *nptr>='0' && *nptr<='7')
+				ret += *nptr-'0';
+		}
+		else
+			return ret;
+	}
+	return ret;
+}
+
+void set_out_volume_setup(char *str)
+{
+	printk("before rk3026 codec out_volume = %d\n", rk3026_codec_out_volume);
+	rk3026_codec_out_volume = rk3026_codec_strtol(str, 10);
+	printk("set rk3026 codec out_volume = %d\n", rk3026_codec_out_volume);
+	playback_power_up_list[15].value = rk3026_codec_out_volume;
+	playback_power_up_list[16].value = rk3026_codec_out_volume;
+}
+
+__setup("out_volume=",set_out_volume_setup);
+
+void set_cap_volume_setup(char *str)
+{
+	printk("before rk3026 codec cap_volume = %d\n", rk3026_codec_cap_volume);
+	rk3026_codec_cap_volume = rk3026_codec_strtol(str, 10);
+	printk("rk3026 codec cap_volume = %d\n", rk3026_codec_cap_volume);
+	capture_power_up_list[10].value = 0x20 | rk3026_codec_cap_volume;
+	capture_power_up_list[11].value = rk3026_codec_cap_volume;
+}
+
+__setup("cap_volume=",set_cap_volume_setup);
+
 static int rk3026_codec_power_up(int type)
 {
 	struct snd_soc_codec *codec = rk3026_priv->codec;
@@ -1759,10 +1818,15 @@ static int rk3026_codec_power_down(int type)
 		printk("%s : rk3026_priv or rk3026_priv->codec is NULL\n", __func__);
 		return -EINVAL;
 	}
-		#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+
+	#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+	if(type == RK3026_CODEC_PLAYBACK || type == RK3026_CODEC_ALL)
+	{
 		tr726c_set_spkctl_en(0);
 		msleep(200);
-		#endif	
+	}
+	#endif	
+
 	printk("%s : power down %s%s%s\n", __func__,
 		type == RK3026_CODEC_PLAYBACK ? "playback" : "",
 		type == RK3026_CODEC_CAPTURE ? "capture" : "",
