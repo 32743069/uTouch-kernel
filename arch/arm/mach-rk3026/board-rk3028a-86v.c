@@ -901,11 +901,7 @@ struct rk29_sdmmc_platform_data default_sdmmc2_data = {
 	     MMC_VDD_29_30 | MMC_VDD_30_31 | MMC_VDD_31_32 | MMC_VDD_32_33 | MMC_VDD_33_34),
 
 	.host_caps = (MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA| MMC_CAP_NONREMOVABLE  |
-	        MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED |
-		    MMC_CAP_1_8V_DDR | MMC_CAP_1_2V_DDR |MMC_CAP_UHS_SDR12 |MMC_CAP_UHS_SDR25 |MMC_CAP_UHS_SDR50|
-		    /*MMC_CAP_UHS_SDR104|MMC_CAP_UHS_DDR50|*/
-		    MMC_CAP_BUS_WIDTH_TEST | MMC_CAP_ERASE | MMC_CAP_CMD23),
-
+	        MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED | MMC_CAP_UHS_SDR12 |MMC_CAP_UHS_SDR25 |MMC_CAP_UHS_SDR50),
 
 	.io_init = rk29_sdmmc2_cfg_gpio,
 	.set_iomux = rk29_sdmmc_set_iomux,
@@ -919,6 +915,9 @@ struct rk29_sdmmc_platform_data default_sdmmc2_data = {
 
 };
 #endif//endif--#ifdef CONFIG_SDMMC2_RK29
+ /**************************************************************************************************
+  * the end of setting for SDMMC devices
+ **************************************************************************************************/
 
 #if defined(CONFIG_REGULATOR_ACT8931)
 extern  int act8931_charge_det;
