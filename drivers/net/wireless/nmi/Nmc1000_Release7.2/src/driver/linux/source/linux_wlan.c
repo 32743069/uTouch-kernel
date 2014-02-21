@@ -292,6 +292,54 @@ struct tx_complete_data{
 	struct sk_buff *skb;
 };
 
+#if 1 // add by tchip
+char GetSNSectorInfo(char * pbuf);
+static char tempBuf[512]={0x0};
+static int use_tchip_mac = 0;
+void tchip_mac_setup(char *str)
+{
+	if(str[0] == '1')
+		use_tchip_mac = 1;
+	else
+		use_tchip_mac = 0;
+
+	printk(KERN_INFO "####### tchip_mac = %d \n", use_tchip_mac);
+}
+__setup("tchip_mac=",tchip_mac_setup);
+
+char* tchip_get_mac_addr()
+{
+     int i;
+     static int is_inited=0;
+
+	if( is_inited )
+		return &tempBuf[506];
+	// read flash mac addr 
+	GetSNSectorInfo(tempBuf);
+        printk(KERN_ERR "########  get flash mac :");
+    	for (i =506 ; i < 512; i++) {
+        	printk(KERN_ERR "%d:%02x, ", i,tempBuf[i]);
+	}
+
+	is_inited = 1;
+	return &tempBuf[506];
+}
+int tchip_set_mac_addr()
+{
+	char* tchip_mac_addr ;
+
+	if ( use_tchip_mac ){
+		tchip_mac_addr = tchip_get_mac_addr();
+		if( !is_valid_ether_addr(tchip_mac_addr) ){
+			printk(KERN_ERR "#########tchip, the mac read from flash is unvalid\n");
+			return -1;
+		}
+		memcpy(mac_add,tchip_mac_addr,6);	
+		return 0;
+	}
+	return -1;
+}
+#endif //tchip end
 
 	/*
 	for now - in frmw_to_linux there should be private data to be passed to it 
@@ -2135,12 +2183,18 @@ int nmc1000_wlan_init(linux_wlan_t* p_nic)
 #endif
 		wlan_init_locks(nic);
 
+#if 1 //add by tchip
+		if ( 0==tchip_set_mac_addr() ){
+			printk(KERN_INFO "########  tchip set mac from flash \n");
+		}else{
+#endif //tchip
 #ifdef STATIC_MACADDRESS
 		nmi_mac_thread = kthread_run(linux_wlan_read_mac_addr,NULL,"nmi_mac_thread");
 		if(nmi_mac_thread < 0){
 			PRINT_ER("couldn't create Mac addr thread\n");
 		}
 #endif
+		}// add by tchip
  
 		linux_to_wlan(&nwi,nic);
 

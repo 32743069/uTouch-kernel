@@ -30,16 +30,7 @@
 
 #define WLAN_MAC_FILE "/data/misc/wifi/wlan_mac"
 
-//extern char GetSNSectorInfo(char * pbuf);
-
-static char GetSNSectorInfoBeforeNandInit(char * pbuf)
-{
-    char * sn_addr = ioremap(0x10501600,0x200);
-    memcpy(pbuf,sn_addr,0x200);
-    iounmap(sn_addr);
-	//print_hex_dump(KERN_WARNING, "sn:", DUMP_PREFIX_NONE, 16,1, sn_addr, 16, 0);
-    return 0;
-}
+extern char GetSNSectorInfoBeforeNandInit(char * pbuf);
 
 int eth_mac_read_from_IDB(u8 *mac)
 {
