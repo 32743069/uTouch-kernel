@@ -23,19 +23,6 @@ choice
 	    bool "communication by SPI"
 endchoice
 
-choice
-    depends on NMC1XXX_WIFI_MODULE
-    prompt "NMC1000 Wi-Fi Driver Version"
-    default NMC1XXX_SPI_722_VERSION
-
-	config NMC1XXX_SPI_722_VERSION
-		bool "Select the Realese 7.22 Driver for NMC1000 "
-	config NMC1XXX_SPI_930_VERSION
-		bool "Select the Realese 9.30 Driver for NMC1000 "
-	config NMC1XXX_SPI_722_FREQUENCY_TEST_VERSION
-		bool "Select the FREQUENCY TEST 7.22 Driver for NMC1000 "
-endchoice
-
 config SDIO_HARD_IRQ
         depends on NMC1XXX_WIFI_MODULE && NMC1XXX_USE_SDIO
         bool "SDIO HARD IRQ"
@@ -71,7 +58,3 @@ config NMC1XXX_ENABLE_DEBUGFS
 	default n
 	---help---
 	   Export status information via debugfs.
-
-
-
-

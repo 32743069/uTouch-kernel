@@ -19,7 +19,9 @@ obj-$(CONFIG_MT5931_MT6622)  += mt5931/
 obj-$(CONFIG_RTL8723BS) += rtl8723bs/
 obj-$(CONFIG_MT7601)	+= rkusbwifi/
 
-obj-$(CONFIG_NMC1XXX_WIFI_MODULE)	+= nmi/
+obj-$(CONFIG_NMC1XXX_SPI_722_VERSION)	+= nmi/
+obj-$(CONFIG_NMC1XXX_SPI_930_VERSION)	+= nmi/nmc1000_9.3_spi_p2p/
+obj-$(CONFIG_NMC1XXX_SPI_722_FREQUENCY_TEST_VERSION)	+= nmi/nmc1000_7.2_spi_test/
 
 #obj-m	+= wlan/
 obj-$(CONFIG_MTK_COMBO_WIFI)	+= combo_mt66xx/
