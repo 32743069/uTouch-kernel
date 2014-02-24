@@ -2650,12 +2650,12 @@ int mac_open(struct net_device *ndev){
 	}
 	#endif
 	
-	if(once)
-	{
+	//if(once)
+	//{
 		NMI_PRINTF("FIRST TIME\n");
 		down(&custom_gpio_lock);
 		custom_chip_wakeup();
-	}
+	//}
 
 			
 	nic = netdev_priv(ndev);
@@ -2687,7 +2687,7 @@ int mac_open(struct net_device *ndev){
 	//if(once)
 	{
 		
-		once++;
+		//once++;
 		printk("*** re-init ***\n");
 		ret = nmc1000_wlan_init(ndev, nic);
 		if(ret < 0)
@@ -2757,7 +2757,7 @@ int mac_open(struct net_device *ndev){
 	  NMI_PRINTF("3\n");
     netif_wake_queue(ndev); 
 	NMI_PRINTF("4\n");
-	if(once)
+	//if(once)
 		up(&custom_gpio_lock);	
 	g_mac_open = 1;
 	//linux_wlan_lock(&close_exit_sync);

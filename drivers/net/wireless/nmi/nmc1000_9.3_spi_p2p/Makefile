@@ -373,7 +373,7 @@ ifeq ($(strip $(TARGET_PLATFORM)), TARGET_RKXXXX)
 	endif
 
 	## test by tony
-	EXTRA_CFLAGS += -DNMC_MP_TOOL_SUPPORT
+	#EXTRA_CFLAGS += -DNMC_MP_TOOL_SUPPORT
 
 endif
 
