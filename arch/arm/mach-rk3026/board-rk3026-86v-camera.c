@@ -183,6 +183,23 @@ static struct rkcamera_platform_data new_camera[] = {
 			    0,
 			    24),
 
+    new_camera_device_ex(RK29_CAM_SENSOR_GC0308,
+			    back,
+			    0,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    TC_CAMERA_BACK_DN_PIN,
+			    CONS(RK29_CAM_SENSOR_GC0308,_PWRDN_ACTIVE),
+			    false,
+			    0x200000,
+			    0,
+			    1,
+			    250000,
+			    CONS(RK29_CAM_SENSOR_GC0308,_I2C_ADDR),
+			    0,
+			    24),
        //##############3   fornt Camera
 /*   new_camera_device(RK29_CAM_SENSOR_GC0308,
                         front,
@@ -208,9 +225,10 @@ static struct rkcamera_platform_data new_camera[] = {
 			    CONS(RK29_CAM_SENSOR_GC0308,_I2C_ADDR),
 			    0,
 			    24),
+
     new_camera_device_ex(RK29_CAM_SENSOR_SP0838,
 			    front,
-			    0,
+			    180,
 			    INVALID_VALUE,
 			    INVALID_VALUE,
 			    INVALID_VALUE,
@@ -225,6 +243,27 @@ static struct rkcamera_platform_data new_camera[] = {
 			    CONS(RK29_CAM_SENSOR_SP0838,_I2C_ADDR),
 			    0,
 			    24),
+
+    new_camera_device_ex(RK29_CAM_SENSOR_GC0329,
+			    front,
+			    0,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    TC_CAMERA_FRONT_DN_PIN,
+			    CONS(RK29_CAM_SENSOR_GC0329,_PWRDN_ACTIVE),
+			    false,
+			    0x200000,//CONS(RK29_CAM_SENSOR_GC0329,_FULL_RESOLUTION),
+			    1,
+			    1,
+			    250000,
+			    CONS(RK29_CAM_SENSOR_GC0329,_I2C_ADDR),
+			    0,
+			    24),
+
+
+
 
     new_camera_device_end
 #endif
@@ -416,12 +455,14 @@ static int tr726c_powerdn_usr_cb(struct rk29camera_gpio_res *res,int level)
 {
 	//back fornt camera diff frome it's name 
 	int pin=3;
-	//if(strcmp(res->dev_name,"gc0308_front") == 0) 
-	//	pin = 4;
+	if(strstr(res->dev_name,"front") == NULL) 
+		pin = 4;
 	printk(KERN_ERR "#########  camera pin is %d, level=%d \n",pin,level);
 
 	nmc1000_gpio_set_value(pin, level);
-	printk(KERN_ERR "#########3 read cameara pin %d\n",nmc1000_gpio_get_value(pin));
+	//nmc1000_gpio_set_value(3,0);
+	//nmc1000_gpio_set_value(4,0);
+	//printk(KERN_ERR "#########3 read cameara pin %d\n",nmc1000_gpio_get_value(pin));
 	mdelay(100);
 }
 #endif
