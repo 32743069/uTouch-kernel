@@ -2482,7 +2482,7 @@ int ddr_init(uint32_t dram_speed_bin, uint32_t freq)
     uint32_t cs,die=1;
     uint32_t calStatusLeft, calStatusRight;
 
-    ddr_print("version 1.00 20130731 \n");
+    ddr_print("version 1.01 20140303 \n");
     cs = (1 << (((pGRF_Reg->GRF_OS_REG[1]) >> DDR_RANK_COUNT)&0x1));    //case 0:1rank ; case 1:2rank ;                            
     mem_type = ((pGRF_Reg->GRF_OS_REG[1] >> 13) &0x7);
     ddr_speed_bin = dram_speed_bin;
