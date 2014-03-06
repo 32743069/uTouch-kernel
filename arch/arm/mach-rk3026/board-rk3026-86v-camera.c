@@ -59,90 +59,10 @@ static struct rkcamera_platform_data new_camera[] = {
     new_camera_device_end
 #else
 
- /*   new_camera_device(RK29_CAM_SENSOR_OV2659,
-                        front,
-                        RK30_PIN3_PB3,
-                        0,
-                        0,
-                        1,
-                        0),*//*
-   new_camera_device(RK29_CAM_SENSOR_GC0308,
-                        front,
-                        RK30_PIN3_PB3,
-                        0,
-                        0,
-                        1,
-                        0),
-                        */
-    /*                    
-    new_camera_device(RK29_CAM_SENSOR_GC0308,
-                        back,
-                        RK30_PIN3_PD7,
-                        0,
-                        0,
-                        1,
-                        0), 
-        */  
-    /*
-   new_camera_device_ex(RK29_CAM_SENSOR_GC0308,
-			back,
-			0,
-			INVALID_VALUE,
-			INVALID_VALUE,
-			INVALID_VALUE,
-			INVALID_VALUE,
-			RK30_PIN3_PD7,
-			CONS(RK29_CAM_SENSOR_GC0308,_PWRDN_ACTIVE),
-			false,
-			CONS(RK29_CAM_SENSOR_GC0308,_FULL_RESOLUTION),
-			0,
-			1,
-			250000,
-			CONS(RK29_CAM_SENSOR_GC0308,_I2C_ADDR),
-			0,
-			24),
-
-	    
-
-    new_camera_device_ex(RK29_CAM_SENSOR_GC0308,
-			    front,
-			    0,
-			    INVALID_VALUE,
-			    INVALID_VALUE,
-			    INVALID_VALUE,
-			    INVALID_VALUE,
-			    RK30_PIN3_PB3,
-			    CONS(RK29_CAM_SENSOR_GC0308,_PWRDN_ACTIVE),
-			    false,
-			    CONS(RK29_CAM_SENSOR_GC0308,_FULL_RESOLUTION),
-			    0,
-			    1,
-			    250000,
-			    CONS(RK29_CAM_SENSOR_GC0308,_I2C_ADDR),
-			    0,
-			    24),
-*/
-
-
-
 //#####################3   back Camera
 
 /*
-   new_camera_device(RK29_CAM_SENSOR_GC2035,
-                        back,
-                        TC_CAMERA_BACK_DN_PIN,//RK30_PIN0_PA1,
-                        0,
-                        0,
-                        1,
-                        0),
 
-   new_camera_device(RK29_CAM_SENSOR_GC2035,
-                        back,
-                        TC_CAMERA_BACK_DN_PIN,
-                        0,
-                        0,
-                        1,
-                        0),
  new_camera_device(RK29_CAM_SENSOR_GC0328,
                         back,
                         TC_CAMERA_BACK_DN_PIN,
@@ -150,21 +70,16 @@ static struct rkcamera_platform_data new_camera[] = {
                         0,
                         1,
                         0),
- new_camera_device(RK29_CAM_SENSOR_GC0329,
-                        back,
-                        TC_CAMERA_BACK_DN_PIN,
-                        0,
-                        0,
-                        1,
-                        0),
-   new_camera_device(RK29_CAM_SENSOR_GC0308,
-                        back,
-                        TC_CAMERA_BACK_DN_PIN,
-                        0,
-                        0,
-                        1,
-                        0),
+
 */
+
+   new_camera_device(RK29_CAM_SENSOR_GC2035,
+                        back,
+                        TC_CAMERA_BACK_DN_PIN,
+                        0,
+                        0,
+                        1,
+                        0),
     new_camera_device_ex(RK29_CAM_SENSOR_SP0838,
 			    back,
 			    0,
@@ -201,13 +116,27 @@ static struct rkcamera_platform_data new_camera[] = {
 			    0,
 			    24),
        //##############3   fornt Camera
-/*   new_camera_device(RK29_CAM_SENSOR_GC0308,
+/*
+
+new_camera_device(RK29_CAM_SENSOR_GC0308,
                         front,
                         TC_CAMERA_FRONT_DN_PIN,
                         0,
                         0,
                         1,
-                        0),*/
+                        0),
+
+
+*/
+
+new_camera_device(RK29_CAM_SENSOR_GC0309,
+                        front,
+                        TC_CAMERA_FRONT_DN_PIN,
+                        0,
+                        0,
+                        1,
+                        0),
+			
     new_camera_device_ex(RK29_CAM_SENSOR_GC0308,
 			    front,
 			    0,
