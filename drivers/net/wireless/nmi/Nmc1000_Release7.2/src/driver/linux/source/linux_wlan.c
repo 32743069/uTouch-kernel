@@ -63,6 +63,10 @@ extern int tchip_dc_det_irq_release(unsigned int irq_pin);
 
 static int linux_wlan_lock_timeout(void* vp,NMI_Uint32 timeout);
 
+uint8_t* g_tx_buffer = NULL;
+uint8_t* g_rx_buffer = NULL;
+uint8_t is_net_dev_init = 0;
+
 #include "svnrevision.h"
 
 #ifdef STATIC_MACADDRESS//brandy_0724 [[
@@ -2999,8 +3003,37 @@ static int __init init_nmc_driver(void){
 	custom_chip_sleep_manually();
 	custom_unlock_bus(is_mac_opened_yet);
 
+	if(g_tx_buffer == NULL)
+		g_tx_buffer = (uint8_t *)linux_wlan_malloc(LINUX_TX_SIZE);
+	
+	if(g_tx_buffer == NULL)
+	{
+		PRINT_ER("Failed to allocate memory for TX\n");		
+		goto _init_fail_;
+	}
+
+	if(g_rx_buffer == NULL)
+		g_rx_buffer = (uint8_t *)linux_wlan_malloc(LINUX_RX_SIZE); 
+	
+	if(g_rx_buffer == NULL)
+	{
+		PRINT_ER("Failed to allocate memory for RX\n");
+		if(g_tx_buffer != NULL)
+		{
+			linux_wlan_free(g_tx_buffer);
+			g_tx_buffer = NULL;
+		}
+		goto _init_fail_;
+	}
+
+
+	is_net_dev_init = 1;
 	PRINT_D(INIT_DBG,"Device has been initialized successfully\n");
-    return 0;
+	return 0;
+
+_init_fail_:	
+	PRINT_ER("Failed to initialize the device\n");
+	return -1;
 #endif
 }
 module_init(init_nmc_driver);

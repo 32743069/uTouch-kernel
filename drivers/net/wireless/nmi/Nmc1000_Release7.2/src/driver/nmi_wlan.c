@@ -32,6 +32,8 @@ int sdio_xfer_cnt(void);
 uint32_t nmi_get_chipid(uint8_t update);
 void init_customer_gpio(uint32_t protect);
 void custom_gpio_reprogram(void);
+extern uint8_t is_net_dev_init;
+
 //static uint32_t vmm_table[NMI_VMM_TBL_SIZE];
 //static uint32_t vmm_table_rbk[NMI_VMM_TBL_SIZE];
 
@@ -2868,7 +2870,14 @@ void nmc1000_gpio_set_value(int gpio_num,int v)
 	uint32_t is_mac_open = g_mac_open;
 	uint32_t mac_state_changed = 0;
 		
-	PRINT_D(TX_DBG,">> GPIO_SET[%d]: %d -mac_open: %d\n",gpio_num,v,is_mac_open);
+	//printk(">> GPIO_SET[%d]: %d -mac_open: %d\n",gpio_num,v,is_mac_open);
+
+	if(!is_net_dev_init)
+	{
+		printk("[nmc1000] Driver should be initialized first \n");
+		return;
+	}
+
 	if(gpio_num != 1 && gpio_num != 3 && gpio_num != 4)
 	{
 		printk("[nmc1000] GPIO number is out of range\n");
@@ -2911,7 +2920,7 @@ void nmc1000_gpio_set_value(int gpio_num,int v)
 	if(!g_mac_open)
 		custom_chip_sleep_manually();
 
-	PRINT_D(TX_DBG,"<<GPIO_Set\n");
+	//printk("<<GPIO_Set\n");
 	if(mac_state_changed != 0)
 		custom_unlock_bus(g_mac_open);
 
@@ -2925,8 +2934,15 @@ int nmc1000_gpio_get_value(int gpio_num)
 	uint32_t reg = 0;
 	uint32_t is_mac_open = g_mac_open;
 	uint32_t mac_state_changed = 0;
-	PRINT_D(TX_DBG,">> GPIO_GET[%d] - mac_open:%d \n",gpio_num,is_mac_open);
+	//printk(">> GPIO_GET[%d] - mac_open:%d \n",gpio_num,is_mac_open);
 
+	if(!is_net_dev_init)
+	{
+		printk("[nmc1000] Driver should be initialized first \n");
+		return -1;
+	
+	}
+	
 	if(gpio_num != 1 && gpio_num != 3 && gpio_num != 4 && gpio_num != 6)
 	{
 		printk("[nmc1000] GPIO number is out of range\n");
@@ -2983,7 +2999,7 @@ int nmc1000_gpio_get_value(int gpio_num)
 
 	if(mac_state_changed != MAC_STATE_OPEN_CLOSE)
 		custom_unlock_bus(is_mac_open);
-	PRINT_D(TX_DBG,"<<GPIO_Get [%d]: %d\n",gpio_num,reg);
+	//printk("<<GPIO_Get [%d]: %d\n",gpio_num,reg);
 	return ((reg)? 1: 0);	
 }
 
@@ -3163,8 +3179,8 @@ uint8_t core_11b_ready(void)
 }
 #endif
 
-uint8_t* g_tx_buffer = NULL;
-uint8_t* g_rx_buffer = NULL;
+extern uint8_t* g_tx_buffer;
+extern uint8_t* g_rx_buffer;
 int nmi_wlan_init(nmi_wlan_inp_t *inp, nmi_wlan_oup_t *oup)
 {
 
@@ -3241,8 +3257,8 @@ int nmi_wlan_init(nmi_wlan_inp_t *inp, nmi_wlan_oup_t *oup)
 	/**
 		alloc tx, rx buffer
 	**/
-	if(g_tx_buffer == NULL)
-		g_tx_buffer = (uint8_t *)g_wlan.os_func.os_malloc(g_wlan.tx_buffer_size);
+	//if(g_tx_buffer == NULL)
+		//g_tx_buffer = (uint8_t *)g_wlan.os_func.os_malloc(g_wlan.tx_buffer_size);
 	
 	g_wlan.tx_buffer = g_tx_buffer;
 	if (g_wlan.tx_buffer == NULL) {
@@ -3253,12 +3269,14 @@ int nmi_wlan_init(nmi_wlan_inp_t *inp, nmi_wlan_oup_t *oup)
 		
 /* rx_buffer is not used unless we activate USE_MEM STATIC which is not applicable, allocating such memory is useless*/	
 #if 1
-	if(g_rx_buffer == NULL)
-		g_rx_buffer = (uint8_t *)g_wlan.os_func.os_malloc(g_wlan.rx_buffer_size); 
+	//if(g_rx_buffer == NULL)
+		//g_rx_buffer = (uint8_t *)g_wlan.os_func.os_malloc(g_wlan.rx_buffer_size); 
 
 	g_wlan.rx_buffer = g_rx_buffer;
-	if (g_wlan.rx_buffer == NULL) 
+	if (g_wlan.rx_buffer == NULL) {
+		ret = -105;
 		goto _fail_;
+		}
 #endif
 
 	/**
@@ -3298,12 +3316,12 @@ int nmi_wlan_init(nmi_wlan_inp_t *inp, nmi_wlan_oup_t *oup)
 
 _fail_:	
 
-	if (g_wlan.tx_buffer)
-		g_wlan.os_func.os_free(g_tx_buffer);
+	//if (g_wlan.tx_buffer)
+		//g_wlan.os_func.os_free(g_tx_buffer);
 
 
-	if (g_wlan.rx_buffer)
-		g_wlan.os_func.os_free(g_rx_buffer);
+	//if (g_wlan.rx_buffer)
+		//g_wlan.os_func.os_free(g_rx_buffer);
 
 	return ret;
 
