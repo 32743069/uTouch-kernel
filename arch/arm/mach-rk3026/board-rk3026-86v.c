@@ -632,7 +632,8 @@ static struct sensor_platform_data stk831x_info = {
 	.poll_delay_ms = 30,
         .init_platform_hw = stk831x_init_platform_hw,
 	#if defined(CONFIG_TCHIP_MACH_TR726C)
-	.orientation = { 0, 1, 0,1, 0, 0, 0, 0, -1},
+	//.orientation = { 0, 1, 0,1, 0, 0, 0, 0, -1},
+	.orientation = {1, 0, 0, 0, -1, 0, 0, 0, -1},
 	#else
 	.orientation = {-1, 0, 0, 0, 1, 0, 0, 0, -1},
 	#endif
