@@ -314,6 +314,7 @@ zkernel.img: zImage FORCE
 tchip: Image FORCE
 	@./scripts/tchip_sysInfgcc pv | tee .fw_version
 	$(Q)$(srctree)/mkkrnlimg $(obj)/arch/arm/boot/Image $(HOME)/vmware/vmShared/kernel.img
+	@cp $(HOME)/vmware/vmShared/kernel.img $(obj)/kernel.img
 	@date
 	@echo -e '\n\t\t\tEnjoy your job ... \n'
 	 
