@@ -264,7 +264,23 @@ new_camera_device(RK29_CAM_SENSOR_GC0308,
 			    0,
 			    24),
 
-
+    new_camera_device_ex(RK29_CAM_SENSOR_GC0328,
+			    front,
+			    270,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    TC_CAMERA_FRONT_DN_PIN,
+			    CONS(RK29_CAM_SENSOR_GC0328,_PWRDN_ACTIVE),
+			    false,
+			    CONS(RK29_CAM_SENSOR_GC0328,_FULL_RESOLUTION),
+			    0,
+			    1,
+			    250000,
+			    CONS(RK29_CAM_SENSOR_GC0328,_I2C_ADDR),
+			    0,
+			    24),
 
 
     new_camera_device_end
