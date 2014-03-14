@@ -258,4 +258,25 @@ config TCHIP_MIX_HDMD
 	  Define HD or MD Machine Reselution by add [tchip_resolution=HD/MD] in parameter file.
 
 
+choice
+	prompt "Select Tchip TR726C Customer"
+	default TCHIP_TR726C_CUSTOMER_PUBLIC
+
+	config TCHIP_TR726C_CUSTOMER_PUBLIC
+		bool " Tchip Customer -- Select PUBLIC"
+	config TCHIP_TR726C_CUSTOMER_JINGHUA
+		bool " Tchip Customer -- Select JING HUA"
+	config TCHIP_TR726C_CUSTOMER_CUBE
+		bool " Tchip Customer -- Select CUBE"
+	config TCHIP_TR726C_CUSTOMER_GBXY
+		bool " Tchip Customer -- Select Gou Bang Xing Ye"
+	config TCHIP_TR726C_CUSTOMER_AIPU
+		bool " Tchip Customer -- Select AI PU"
+endchoice
+
+
+
+
 endmenu
+
+
