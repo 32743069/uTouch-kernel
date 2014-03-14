@@ -146,7 +146,11 @@ static struct rkcamera_platform_data new_camera[] = {
 
     new_camera_device_ex(RK29_CAM_SENSOR_GC0308,
 			    back,
+	#if defined(CONFIG_TCHIP_TR726C_CUSTOMER_JINGHUA)
+			    90,
+	#else
 			    0,
+	#endif
 			    INVALID_VALUE,
 			    INVALID_VALUE,
 			    INVALID_VALUE,
