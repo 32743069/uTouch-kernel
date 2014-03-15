@@ -260,6 +260,7 @@ config TCHIP_MIX_HDMD
 
 choice
 	prompt "Select Tchip TR726C Customer"
+	depends on TCHIP_MACH_TR726C
 	default TCHIP_TR726C_CUSTOMER_PUBLIC
 
 	config TCHIP_TR726C_CUSTOMER_PUBLIC

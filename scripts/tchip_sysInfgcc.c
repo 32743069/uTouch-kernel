@@ -171,6 +171,21 @@ static void init_otgType(void)
 	strcat(tchip_version,"_OTG");
 #endif
 }
+
+static void init_customer(void)
+{
+#if defined (CONFIG_TCHIP_TR726C_CUSTOMER_PUBLIC)
+	strcat(tchip_version,"_Public");
+#elif defined (CONFIG_TCHIP_TR726C_CUSTOMER_JINGHUA)
+	strcat(tchip_version,"_jh");
+#elif defined (CONFIG_TCHIP_TR726C_CUSTOMER_CUBE)
+	strcat(tchip_version,"_cube");
+#elif defined (CONFIG_TCHIP_TR726C_CUSTOMER_GBXY)
+	strcat(tchip_version,"_gbxy");
+#elif defined (CONFIG_TCHIP_TR726C_CUSTOMER_AIPU)
+	strcat(tchip_version,"_aipu");
+#endif
+}
 static void init_JogballType(void)
 {
 #if defined (CONFIG_TCHIP_JOGBALL)
@@ -218,6 +233,7 @@ static void rk29_init_Version(void)
 	init_modemVersion();
 	init_tpType();
 	init_otgType();
+	init_customer();
 	init_JogballType();
 	init_curTime();
 	strcat(tchip_version, ")");
