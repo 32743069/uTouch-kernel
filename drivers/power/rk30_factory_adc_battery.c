@@ -98,7 +98,7 @@ char gDischargeFlag[4] = {"on "};
 
 
 #ifdef CONFIG_BATTERY_RK30_VOL3V8
-#define BATT_MAX_VOL_VALUE                             4120               	//Full  charge volate	 
+#define BATT_MAX_VOL_VALUE                             4300               	//Full  charge volate	 
 #define BATT_ZERO_VOL_VALUE                            3600//3500              	//power down voltage
 #define BATT_NOMAL_VOL_VALUE                         3800            
 #if defined(CONFIG_TCHIP_MACH_TR726C)
@@ -1617,7 +1617,7 @@ static int rk30_adc_battery_get_health(struct rk30_adc_battery_data *bat)
 
 static int rk30_adc_battery_get_present(struct rk30_adc_battery_data *bat)
 {
-	return (bat->bat_voltage < BATT_MAX_VOL_VALUE) ? 0 : 1;
+	return (bat->bat_voltage < BATT_MAX_VOL_VALUE) ? 1 : 0;
 }
 
 static int rk30_adc_battery_get_voltage(struct rk30_adc_battery_data *bat)
