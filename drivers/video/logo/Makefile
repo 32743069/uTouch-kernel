@@ -25,6 +25,7 @@ obj-$(CONFIG_LOGO_LOWERPOWER_WARNING)   += logo_linux_lowerpower_clut224.o
 obj-$(CONFIG_LOGO_CHARGER_CLUT224)         += logo_charger00_clut224.o logo_charger01_clut224.o logo_charger02_clut224.o logo_charger03_clut224.o logo_charger04_clut224.o logo_charger05_clut224.o logo_charger06_clut224.o logo_charger07_clut224.o logo_charger08_clut224.o 
 
 obj-$(CONFIG_SPU_BASE)			+= logo_spe_clut224.o
+obj-$(CONFIG_LOGO_TCHIP_CUSTOMER_CLUT224)        += logo_tchip_customer_clut224.o
 
 #add by caixx
 obj-y	+= tchip_sysInf.o
@@ -54,6 +55,12 @@ bmptologo := scripts/bmptologo
 pnmtologo := scripts/pnmtologo
 
 sysinfgcc := scripts/tchip_sysInfgcc
+
+tchip_customer_logo_name := logo_linux_clut224.ppm
+ifeq ($(CONFIG_TCHIP_TR726C_CUSTOMER_GBXY),y)
+tchip_customer_logo_name := logo_tr726c_gbxy.ppm
+endif
+
 # Create commands like "pnmtologo -t mono -n logo_mac_mono -o ..."
 quiet_cmd_logo = LOGO    $@
 	cmd_logo = $(pnmtologo) \
@@ -76,11 +83,17 @@ $(obj)/%_vga16.c: $(src)/%_vga16.ppm $(pnmtologo) FORCE
 $(obj)/%_clut224.c: $(src)/%_clut224.ppm $(pnmtologo) FORCE
 	$(call if_changed,logo)
 
+$(obj)/logo_tchip_customer_clut224.c: $(src)/$(tchip_customer_logo_name) $(pnmtologo) FORCE
+	@rm -f $(src)/logo_tchip_customer_clut224.*
+	$(Q)cp -a $(src)/$(tchip_customer_logo_name) $(src)/logo_tchip_customer_clut224.ppm
+	$(pnmtologo) -t clut224 -n logo_tchip_customer_clut224 -o $(src)/logo_tchip_customer_clut224.c $(src)/logo_tchip_customer_clut224.ppm
+
 $(obj)/%_gray256.c: $(src)/%_gray256.pgm $(pnmtologo) FORCE
 	$(call if_changed,logo)
 
 $(obj)/%_bmp.c: $(src)/%_bmp.bmp $(bmptologo) FORCE
 	$(call if_changed,bmplogo)
 
+	
 # Files generated that shall be removed upon make clean
 clean-files := *.o *_mono.c *_vga16.c *_clut224.c *_gray256.c *_bmp.c

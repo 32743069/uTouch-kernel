@@ -25,6 +25,10 @@ config LOGO_LINUX_VGA16
 
 config LOGO_LINUX_CLUT224
 	bool "Standard 224-color Linux logo"
+	default n
+
+config LOGO_TCHIP_CUSTOMER_CLUT224
+	bool "Tchip Customer --> Standard 224-color Linux logo"
 	default y
 
 config LOGO_PIPO_CLUT224
