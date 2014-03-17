@@ -60,6 +60,9 @@ tchip_customer_logo_name := logo_linux_clut224.ppm
 ifeq ($(CONFIG_TCHIP_TR726C_CUSTOMER_GBXY),y)
 tchip_customer_logo_name := logo_tr726c_gbxy.ppm
 endif
+ifeq ($(CONFIG_TCHIP_TR726C_CUSTOMER_CUBE),y)
+tchip_customer_logo_name := logo_tr726c_cube.ppm
+endif
 
 # Create commands like "pnmtologo -t mono -n logo_mac_mono -o ..."
 quiet_cmd_logo = LOGO    $@
