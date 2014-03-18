@@ -526,6 +526,10 @@ static int  get_ac_status(struct rk30_adc_battery_data *bat){
 	
 	struct rk30_adc_battery_platform_data *pdata = bat->pdata;
 	int status = 0;
+	#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+	status = nmc1000_battery_get_status();
+	return status;
+	#endif
 	if (pdata->dc_det_pin != INVALID_GPIO){
 	       	if (gpio_get_value (pdata->dc_det_pin) == pdata->dc_det_level){
 				status = 1;
@@ -608,11 +612,11 @@ static int rk_battery_get_status(struct rk30_adc_battery_data *bat)
 
 
 #if defined (CONFIG_BATTERY_RK30_AC_CHARGE)
-	#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
-	ac_ac_charging = nmc1000_battery_get_status();
-	#else
+	//#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+	//ac_ac_charging = nmc1000_battery_get_status();
+	//#else
 	ac_ac_charging = get_ac_status(bat);
-	#endif
+	//#endif
 	if(1 == ac_ac_charging)
 		charge_on = 1;
 #endif
@@ -1794,6 +1798,8 @@ static int rk30_adc_battery_resume(struct platform_device *dev)
 
 
 unsigned long AdcTestCnt = 0;
+
+extern int  g_charge_mode; // defined in rk29_charger_display.c
 static void rk30_adc_battery_timer_work(struct work_struct *work)
 {
 struct rk30_adc_battery_data  *bat = container_of((work), \
@@ -1810,7 +1816,7 @@ static int nmc_dc_delay_times = 0;
 	}
 
 #if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
-	if( nmc_dc_delay_times <= 0 ){
+	if( nmc_dc_delay_times <= 0 || g_charge_mode==1 ){
 		bat ->charge_level = rk_battery_get_status(bat);
 		nmc_dc_delay_times = 2;
 	}else

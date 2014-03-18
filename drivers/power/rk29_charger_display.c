@@ -129,6 +129,10 @@ static int  __init start_charge_logo_display(void)
 		return 0;
 
 	}
+	//delay to wait for the battery status had be gotten
+#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+       msleep(500);
+#endif
 
 	if (rk_get_system_battery_status() != POWER_SUPPLY_TYPE_BATTERY)
 		val_status.intval = POWER_SUPPLY_STATUS_CHARGING;
