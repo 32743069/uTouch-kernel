@@ -40,27 +40,51 @@ Comprehensive camera device registration:
 #define TC_CAMERA_BACK_DN_PIN RK30_PIN0_PA1
 #define TC_CAMERA_FRONT_DN_PIN RK30_PIN3_PB3
 #endif
+
+
+
+///#################   select camera for customer
+
+#if   defined(CONFIG_TCHIP_TR726C_CUSTOMER_JINGHUA)
+#define TC_B_GC0308
+#define TC_F_GC0329
+
+#elif defined(CONFIG_TCHIP_TR726C_CUSTOMER_CUBE)
+#define TC_F_GC0308
+#define TC_F_SP0838
+
+#elif defined(CONFIG_TCHIP_TR726C_CUSTOMER_AIPU)
+#define TC_F_GC0311
+#define TC_B_BF3920
+#define TC_B_BF3703
+
+#elif defined(CONFIG_TCHIP_TR726C_CUSTOMER_GBXY)
+#define TC_F_GC0328
+
+#else //all for public
+//back
+#define TC_B_BF3920
+#define TC_B_BF3703
+#define TC_B_GC2035
+#define TC_B_GC0308
+#define TC_B_SP0838
+//fornt
+#define TC_F_GC0308
+#define TC_F_GC0328
+#define TC_F_GC0329
+#define TC_F_GC0311
+#define TC_F_GC0309
+#define TC_F_SP0838
+
+#endif
+
+
+
+
+
 static struct rkcamera_platform_data new_camera[] = { 
-#if defined(CONFIG_MACH_RK3026_PHONEPAD_780)
-	    new_camera_device(RK29_CAM_SENSOR_GC2035,
-			                        back,
-			                        0,
-			                        0,
-			                        0,
-			                        1,
-			                        0),
-    new_camera_device(RK29_CAM_SENSOR_GC0308,
-		                        front,
-		                        RK30_PIN3_PB3,
-		                        0,
-		                        0,
-		                        1,
-		                        0), 
-    new_camera_device_end
-#else
 
 //#####################3   back Camera
-
 /*
 
  new_camera_device(RK29_CAM_SENSOR_GC0328,
@@ -72,6 +96,7 @@ static struct rkcamera_platform_data new_camera[] = {
                         0),
 
 */
+#if defined(TC_B_BF3920)
    new_camera_device_ex(RK29_CAM_SENSOR_BF3920,
                          back,
                          0,
@@ -89,7 +114,9 @@ static struct rkcamera_platform_data new_camera[] = {
                         CONS(RK29_CAM_SENSOR_BF3920,_I2C_ADDR),
                          0,
                          24),
+#endif
 
+#ifdef TC_B_BF3703
     new_camera_device_ex(RK29_CAM_SENSOR_BF3703,
                         back,
                         0,
@@ -107,7 +134,9 @@ static struct rkcamera_platform_data new_camera[] = {
                         CONS(RK29_CAM_SENSOR_BF3703,_I2C_ADDR),
                         0,
                         24),
+#endif
 
+#ifdef TC_B_GC2035
     new_camera_device_ex(RK29_CAM_SENSOR_GC2035,
 			    back,
 			    0,
@@ -125,7 +154,9 @@ static struct rkcamera_platform_data new_camera[] = {
 			    CONS(RK29_CAM_SENSOR_GC2035,_I2C_ADDR),
 			    0,
 			    24),
+#endif
 
+#ifdef TC_B_SP0838
     new_camera_device_ex(RK29_CAM_SENSOR_SP0838,
 			    back,
 			    0,
@@ -143,7 +174,9 @@ static struct rkcamera_platform_data new_camera[] = {
 			    CONS(RK29_CAM_SENSOR_SP0838,_I2C_ADDR),
 			    0,
 			    24),
+#endif
 
+#ifdef TC_B_GC0308
     new_camera_device_ex(RK29_CAM_SENSOR_GC0308,
 			    back,
 	#if defined(CONFIG_TCHIP_TR726C_CUSTOMER_JINGHUA)
@@ -165,6 +198,9 @@ static struct rkcamera_platform_data new_camera[] = {
 			    CONS(RK29_CAM_SENSOR_GC0308,_I2C_ADDR),
 			    0,
 			    24),
+#endif
+
+
        //##############3   fornt Camera
 /*
 
@@ -178,6 +214,7 @@ new_camera_device(RK29_CAM_SENSOR_GC0308,
 
 
 */
+#ifdef TC_F_GC0311
     new_camera_device_ex(RK29_CAM_SENSOR_GC0311,
 			    front,
 			    270,
@@ -195,7 +232,9 @@ new_camera_device(RK29_CAM_SENSOR_GC0308,
 			    CONS(RK29_CAM_SENSOR_GC0311,_I2C_ADDR),
 			    0,
 			    24),
+#endif
 
+#ifdef TC_F_GC0309
     new_camera_device_ex(RK29_CAM_SENSOR_GC0309,
 			    front,
 			    270,
@@ -213,7 +252,9 @@ new_camera_device(RK29_CAM_SENSOR_GC0308,
 			    CONS(RK29_CAM_SENSOR_GC0309,_I2C_ADDR),
 			    0,
 			    24),
+#endif
 			
+#ifdef TC_F_GC0308
     new_camera_device_ex(RK29_CAM_SENSOR_GC0308,
 			    front,
 			    270,
@@ -231,7 +272,9 @@ new_camera_device(RK29_CAM_SENSOR_GC0308,
 			    CONS(RK29_CAM_SENSOR_GC0308,_I2C_ADDR),
 			    0,
 			    24),
+#endif
 
+#ifdef TC_F_SP0838
     new_camera_device_ex(RK29_CAM_SENSOR_SP0838,
 			    front,
 			    270,
@@ -249,7 +292,9 @@ new_camera_device(RK29_CAM_SENSOR_GC0308,
 			    CONS(RK29_CAM_SENSOR_SP0838,_I2C_ADDR),
 			    0,
 			    24),
+#endif
 
+#ifdef TC_F_GC0329
     new_camera_device_ex(RK29_CAM_SENSOR_GC0329,
 			    front,
 			    270,
@@ -267,7 +312,9 @@ new_camera_device(RK29_CAM_SENSOR_GC0308,
 			    CONS(RK29_CAM_SENSOR_GC0329,_I2C_ADDR),
 			    0,
 			    24),
+#endif
 
+#ifdef TC_F_GC0328
     new_camera_device_ex(RK29_CAM_SENSOR_GC0328,
 			    front,
 			    270,
@@ -285,10 +332,12 @@ new_camera_device(RK29_CAM_SENSOR_GC0308,
 			    CONS(RK29_CAM_SENSOR_GC0328,_I2C_ADDR),
 			    0,
 			    24),
+#endif
+
+
 
 
     new_camera_device_end
-#endif
 };
 /*---------------- Camera Sensor Macro Define Begin  ------------------------*/
 /*---------------- Camera Sensor Configuration Macro Begin ------------------------*/
