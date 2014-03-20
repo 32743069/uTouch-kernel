@@ -4054,6 +4054,7 @@ out:
 	return ret;
 }
 
+
 static int rk29_sdmmc_shutdown(struct platform_device *pdev)
 {
 	struct mmc_host *mmc;// = platform_get_drvdata(pdev);
@@ -4211,7 +4212,7 @@ static int rk29_sdmmc_suspend(struct platform_device *pdev, pm_message_t state)
 	int ret = 0;
     struct rk29_sdmmc_platform_data *pdata = pdev->dev.platform_data;
 
-    if( !(pdata && pdata->emmc_is_selected && pdata->emmc_is_selected(RK29_SDMMC_EMMC_ID))) 
+    if((pdata && pdata->emmc_is_selected && pdata->emmc_is_selected(RK29_SDMMC_EMMC_ID))) 
         return 0;
         
     mmc =   platform_get_drvdata(pdev); 
@@ -4282,7 +4283,7 @@ static int rk29_sdmmc_resume(struct platform_device *pdev)
 	int ret = 0;
     struct rk29_sdmmc_platform_data *pdata = pdev->dev.platform_data;
 
-    if( !(pdata && pdata->emmc_is_selected && pdata->emmc_is_selected(RK29_SDMMC_EMMC_ID))) 
+    if( (pdata && pdata->emmc_is_selected && pdata->emmc_is_selected(RK29_SDMMC_EMMC_ID))) 
         return 0;
         
     mmc =   platform_get_drvdata(pdev); 
