@@ -81,3 +81,7 @@ GTAGS
 *.orig
 *~
 \#*#
+
+# tchip tool information generated file
+scripts/tchip_sysInfgcc
+drivers/video/logo/tchip_sysInf.c
