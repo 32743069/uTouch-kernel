@@ -2301,6 +2301,7 @@ static void __init machine_rk30_board_init(void)
 #if defined(CONFIG_TCHIP_MACH_TR726C)
 	// gsensor int 
 	iomux_set(GPIO1_A0);
+	gpio_request (RK30_PIN0_PA0,"gsenor_int");
     	gpio_direction_input(RK30_PIN0_PA0);
 #endif
 }
