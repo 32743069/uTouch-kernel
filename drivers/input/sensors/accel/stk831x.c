@@ -477,11 +477,11 @@ static int STK831x_SetVD(struct i2c_client *client)
 			DBG("%s:line=%d,error\n",__func__,__LINE__);
 			return result;
 		}
-		printk("%s: readvalue = 0x%x \n",__func__, readvalue);
+		//printk("%s: readvalue = 0x%x \n",__func__, readvalue);
 	}
 	else
 	{
-		printk("%s: reg24=0, do nothing\n", __func__);
+		//printk("%s: reg24=0, do nothing\n", __func__);
 		return 0;		
 	}
 	
@@ -502,7 +502,7 @@ static int STK831x_SetVD(struct i2c_client *client)
 		printk(KERN_ERR "%s: error, reg24=0x%x, read=0x%x\n", __func__, readvalue, status);
 		return -1;
 	}
-	printk(KERN_INFO "%s: successfully", __func__);	
+	//printk(KERN_INFO "%s: successfully", __func__);	
 	
 	//msleep(200);	
 	return result;
@@ -2021,7 +2021,7 @@ static int STK831x_Init(struct i2c_client *client)
         int result = 0;
 		int ret = 0;
 
-	printk("%s\n", __func__);
+	//printk("%s\n", __func__);
 
 	this_client = client;
 	
@@ -2031,14 +2031,14 @@ static int STK831x_Init(struct i2c_client *client)
                 printk("%s:line=%d,error\n",__func__,__LINE__);
                 return result;
         }*/
-
+/*
 	printk("%s: driver version:%s\n", __func__,STK_ACC_DRIVER_VERSION);
 #ifdef CONFIG_SENSORS_STK8312
 	printk("%s: Initialize stk8312\n", __func__);
 #elif defined CONFIG_SENSORS_STK8313
 	printk("%s: Initialize stk8313\n", __func__);
 #endif		
-	
+*/	
 	buffer[0] = STK831X_RESET;
 	buffer[1] = 0x00;
 	result = STK_i2c_Tx(client, buffer, 2);
