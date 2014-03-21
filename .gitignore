@@ -85,3 +85,4 @@ GTAGS
 # tchip tool information generated file
 scripts/tchip_sysInfgcc
 drivers/video/logo/tchip_sysInf.c
+drivers/video/logo/logo_tchip_customer_clut224.ppm
