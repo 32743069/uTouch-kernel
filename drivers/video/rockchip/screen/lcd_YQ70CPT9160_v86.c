@@ -8,7 +8,7 @@
 #define LVDS_FORMAT       	LVDS_8BIT_1
 #define OUT_FACE		OUT_P666
 
-#define DCLK			48000000        // 65000000
+#define DCLK			54000000        // 65000000
 #define LCDC_ACLK        	500000000//312000000           //29 lcdc axi DMA ÆµÂÊ
 
 /* Timing */
@@ -41,7 +41,7 @@
 #define LCD_HEIGHT      	85
 //for 800x480 screen parameter
 #if defined(CONFIG_TCHIP_MIX_HDMD)
-#define DCLK_MD			48000000        // 65000000
+#define DCLK_MD			54000000        // 65000000
 #define LCDC_ACLK_MD        	500000000//312000000           //29 lcdc axi DMA ÆµÂÊ
 
 #define H_PW_MD			30
