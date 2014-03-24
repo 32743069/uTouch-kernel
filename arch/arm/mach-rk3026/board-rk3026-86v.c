@@ -647,6 +647,16 @@ static struct sensor_platform_data stk831x_info = {
 };
 #endif
 
+#if defined (CONFIG_SENSORS_STK8312)
+#define STK8312_INT_PIN   RK30_PIN0_PA0
+static struct gsensor_platform_data STK8312_info = {
+    .model= 8312,
+    .swap_xy = 0,
+    .swap_xyz = 1,
+    //.orientation = {1, 0, 0, 0, -1, 0, 0, 0, -1},//define in driver
+};
+#endif
+
 #if defined (CONFIG_GS_MXC6225)
 #define MXC6225_INT_PIN   GS_INT_PIN
 
@@ -2075,6 +2085,16 @@ static struct i2c_board_info __initdata i2c1_info[] = {
 	  .irq			  = STK831X_INT_PIN,
 	  .platform_data  = &stk831x_info,
 	},
+#endif
+
+#if defined (CONFIG_SENSORS_STK8312)
+       {
+         .type                   = "stk831x",
+         .addr                   = 0x3d,
+         .flags                  = 0,
+         .irq                    = STK8312_INT_PIN,
+         .platform_data          = &STK8312_info,
+       },
 #endif
 
 #if defined (CONFIG_TOUCHSCREEN_AW5209)
