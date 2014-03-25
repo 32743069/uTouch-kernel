@@ -42,7 +42,7 @@
 #define CONFIG_GS_STK8312
 //#define CONFIG_GS_STK8313
 
-#define STK_ACC_DRIVER_VERSION	"1.8.1 20131207 revised"
+#define STK_ACC_DRIVER_VERSION	"1.8.1 20140324"
 
 #ifdef CONFIG_GS_STK8312
 	#include "stk8312.h"
@@ -2397,8 +2397,8 @@ static int sensor_report_value(struct i2c_client *client)
 	axis.y = (pdata->orientation[3])*x + (pdata->orientation[4])*y + (pdata->orientation[5])*z; 
 	axis.z = (pdata->orientation[6])*x + (pdata->orientation[7])*y + (pdata->orientation[8])*z;
 	
-	if(axis.z<0)
-		axis.z = -axis.z;
+//	if(axis.z<0)
+//		axis.z = -axis.z;
 
        gsensor_report_value(client, &axis);
 
