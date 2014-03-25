@@ -1801,7 +1801,11 @@ static int rk30_adc_battery_resume(struct platform_device *dev)
 
 unsigned long AdcTestCnt = 0;
 
+#ifdef CONFIG_POWER_ON_CHARGER_DISPLAY
 extern int  g_charge_mode; // defined in rk29_charger_display.c
+#else
+static int g_charge_mode = 0;
+#endif
 static void rk30_adc_battery_timer_work(struct work_struct *work)
 {
 struct rk30_adc_battery_data  *bat = container_of((work), \
