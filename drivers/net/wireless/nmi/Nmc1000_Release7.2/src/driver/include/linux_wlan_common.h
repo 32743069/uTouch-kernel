@@ -80,7 +80,7 @@ extern atomic_t DEBUG_LEVEL;
 
 #define REGION	 INIT_DBG | GENERIC_DBG | CFG80211_DBG | FIRM_DBG 
 
-#define DEBUG	    1
+#define DEBUG	    0
 #define INFO        0
 #define WRN         0
 #define PRINT_D(region,...)	do{ if(DEBUG == 1 && ((REGION)&(region))){printk("DBG [%s: %d]",__FUNCTION__,__LINE__);\

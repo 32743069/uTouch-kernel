@@ -522,7 +522,7 @@ static int DebuggingThreadTask(void* vp)
 	{
 		if(g_linux_wlan&&g_linux_wlan->nmc1000_initialized)
 		{
-			printk("*** Debug Thread Running ***\n");
+			//printk("*** Debug Thread Running ***\n");
 			if(!linux_wlan_lock_timeout(&g_linux_wlan->wdt_thread_ended,6000))
 			{
 				printk("Exit debug thread\n");
