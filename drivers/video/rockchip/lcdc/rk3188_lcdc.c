@@ -579,7 +579,7 @@ static int rk3188_load_screen(struct rk_lcdc_device_driver *dev_drv, bool initsc
 	{
 		if(screen->type==SCREEN_MCU)
 		{
-	    		printk("MUC¡¡screen not supported now!\n");
+	    		printk("MUC screen not supported now!\n");
 			return -EINVAL;
 		}
 
@@ -1040,6 +1040,64 @@ static int rk3188_lcdc_ioctl(struct rk_lcdc_device_driver *dev_drv, unsigned int
 	return 0;
 }
 
+static void lcd_pin_low (void)
+{
+
+	iomux_mode_to_gpio(LCDC0_D10);
+	iomux_mode_to_gpio(LCDC0_D11);
+	iomux_mode_to_gpio(LCDC0_D12);
+	iomux_mode_to_gpio(LCDC0_D13);
+	iomux_mode_to_gpio(LCDC0_D14);
+	iomux_mode_to_gpio(LCDC0_D15);
+	iomux_mode_to_gpio(LCDC0_D16);
+	iomux_mode_to_gpio(LCDC0_D17);
+	
+	gpio_request (RK30_PIN2_PB4,"d10");
+	gpio_request (RK30_PIN2_PB5,"d11");
+	gpio_request (RK30_PIN2_PB6,"d12");
+	gpio_request (RK30_PIN2_PB7,"d13");
+	gpio_request (RK30_PIN2_PC0,"d14");
+	gpio_request (RK30_PIN2_PC1,"d15");
+	gpio_request (RK30_PIN2_PC2,"d16");
+	gpio_request (RK30_PIN2_PC3,"d17");
+
+	gpio_direction_output (RK30_PIN2_PB4,GPIO_LOW);
+	gpio_direction_output (RK30_PIN2_PB5,GPIO_LOW);
+	gpio_direction_output (RK30_PIN2_PB6,GPIO_LOW);
+	gpio_direction_output (RK30_PIN2_PB7,GPIO_LOW);
+	gpio_direction_output (RK30_PIN2_PC0,GPIO_LOW);
+	gpio_direction_output (RK30_PIN2_PC1,GPIO_LOW);
+	gpio_direction_output (RK30_PIN2_PC2,GPIO_LOW);
+	gpio_direction_output (RK30_PIN2_PC3,GPIO_LOW);
+	
+	gpio_free (RK30_PIN2_PB4);      
+	gpio_free (RK30_PIN2_PB5);
+	gpio_free (RK30_PIN2_PB6);
+	gpio_free (RK30_PIN2_PB7); 
+	gpio_free (RK30_PIN2_PC0);      
+	gpio_free (RK30_PIN2_PC1);
+	gpio_free (RK30_PIN2_PC2);
+	gpio_free (RK30_PIN2_PC3);  
+
+
+}
+
+static void lcd_pin_mux (void)
+{
+
+	iomux_set(LCDC0_D10);
+	iomux_set(LCDC0_D11);
+	iomux_set(LCDC0_D12);
+	iomux_set(LCDC0_D13);
+	iomux_set(LCDC0_D14);
+	iomux_set(LCDC0_D15);
+	iomux_set(LCDC0_D16);
+	iomux_set(LCDC0_D17);
+		
+}
+
+
+
 static int rk3188_lcdc_early_suspend(struct rk_lcdc_device_driver *dev_drv)
 {
 
@@ -1077,6 +1135,9 @@ static int rk3188_lcdc_early_suspend(struct rk_lcdc_device_driver *dev_drv)
 		}
 		gpio_direction_output(gpio_dclk,GPIO_LOW);
 	}
+	#if (CONFIG_TCHIP_TR726C_CUSTOMER_GBXY)
+	lcd_pin_low ();
+	#endif
 #endif
 	return 0;
 }
@@ -1089,6 +1150,9 @@ static int rk3188_lcdc_early_resume(struct rk_lcdc_device_driver *dev_drv)
 	int __iomem *c;
 	int v;
 #if defined(CONFIG_ARCH_RK3026)
+        #if (CONFIG_TCHIP_TR726C_CUSTOMER_GBXY)
+        lcd_pin_mux ();
+        #endif
 	if(dev_drv->screen0->type != SCREEN_LVDS){
 		int gpio_dclk = iomux_mode_to_gpio(LCDC0_DCLK);
 		gpio_free(gpio_dclk);
