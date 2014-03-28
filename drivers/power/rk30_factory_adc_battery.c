@@ -49,7 +49,7 @@ static int rk30_battery_dbg_level = 0;
 module_param_named(dbg_level, rk30_battery_dbg_level, int, 0644);
 #define DBG( args...) \
 	do { \
-		if (rk30_battery_dbg_level) { \
+		if (rk30_battery_dbg_level>1) { \
 			pr_info(args); \
 		} \
 	} while (0)
@@ -261,7 +261,7 @@ int nmc1000_battery_get_status()
 	int val = nmc1000_gpio_get_value(6);
 	if( val != -1 ){
 		if(rk30_battery_dbg_level)
-			printk(KERN_ERR "###########3  %s : dc status %d\n",__func__,val);
+			DBG(KERN_ERR "###########3  %s : dc status %d\n",__func__,val);
 		if( get_suspend_state() == PM_SUSPEND_MEM && val==nmc1000_charging_status)
 			rk28_send_wakeup_key();
 		nmc1000_charging_status = !val;
@@ -460,7 +460,7 @@ static int rk30_adc_battery_load_capacity(void)
 	long fd = sys_open(BATT_FILENAME,O_RDONLY,0);
 
 	if(fd < 0){
-		DBG("rk30_adc_battery_load_capacity: open file /data/bat_last_capacity.dat failed\n");
+		printk("rk30_adc_battery_load_capacity: open file /data/bat_last_capacity.dat failed\n");
 		return -1;
 	}
 
@@ -477,7 +477,7 @@ static void rk30_adc_battery_put_capacity(int loadcapacity)
 	long fd = sys_open(BATT_FILENAME,O_CREAT | O_RDWR,0);
 
 	if(fd < 0){
-		DBG("rk30_adc_battery_put_capacity: open file /data/bat_last_capacity.dat failed\n");
+		printk("rk30_adc_battery_put_capacity: open file /data/bat_last_capacity.dat failed\n");
 		return;
 	}
 	
@@ -1906,11 +1906,11 @@ static int nmc_dc_delay_times = 0;
                             tm.tm_hour, tm.tm_min, tm.tm_sec, bat->bat_status, bat ->adc_val, rk_adc_voltage(bat, bat ->adc_val),
                             bat->bat_voltage, bat->bat_capacity, bat ->capacitytmp, bat ->gBatCapacityDisChargeCnt, bat ->gBatCapacityChargeCnt);
                     int ret = sys_write(fd_log, (const char __user *)buf, strlen(buf));
-                    printk("undate charge info, ret = %d, len=%d\n", ret, strlen(buf));
+                    DBG("undate charge info, ret = %d, len=%d\n", ret, strlen(buf));
           }
 #endif 
 
-			DBG("Status = %d, RealAdcVal = %d, RealVol = %d,gBatVol = %d, gBatCap = %d, RealCapacity = %d, batt_dischargecnt = %d\n,  chargecnt = %d,ac_count = %d, usb_count =%d ,usb_dischargecount =%d\n", 
+			printk("Status = %d, RealAdcVal = %d, RealVol = %d,gBatVol = %d, gBatCap = %d, RealCapacity = %d, batt_dischargecnt = %d\n,  chargecnt = %d,ac_count = %d, usb_count =%d ,usb_dischargecount =%d\n", 
 			bat ->bat_status, bat ->adc_val, rk_adc_voltage(bat, bat ->adc_val), 
 			bat ->bat_voltage, bat ->bat_capacity, bat ->capacitytmp, bat ->gBatCapacityDisChargeCnt, bat ->gBatCapacityChargeCnt,
 			bat ->gBatCapacityacChargeCnt, bat ->gBatCapacityusbChargeCnt, bat ->gBatCapacityusbdisChargeCnt);
