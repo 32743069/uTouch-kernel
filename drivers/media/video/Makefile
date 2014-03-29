@@ -114,7 +114,11 @@ obj-$(CONFIG_SOC_CAMERA_GC0311)         += gc0311.o
 obj-$(CONFIG_SOC_CAMERA_BF3920)         += bf3920.o
 obj-$(CONFIG_SOC_CAMERA_BF3703)         += bf3703.o
 obj-$(CONFIG_SOC_CAMERA_GC2015)		+= gc2015.o
+ifeq ($(CONFIG_TCHIP_TR726C_CUSTOMER_HUIKE),y)
+obj-$(CONFIG_SOC_CAMERA_GC2035)         += gc2035_tr726c_huike.o
+else
 obj-$(CONFIG_SOC_CAMERA_GC2035)         += gc2035.o
+endif
 obj-$(CONFIG_SOC_CAMERA_SIV120B)	+= siv120b.o
 obj-$(CONFIG_SOC_CAMERA_SIV121D)	+= siv121d.o
 obj-$(CONFIG_SOC_CAMERA_SID130B)	+= sid130B.o
@@ -128,7 +132,11 @@ obj-$(CONFIG_SOC_CAMERA_NT99340)	+= nt99340_2way.o
 ifeq ($(CONFIG_TCHIP_TR726C_CUSTOMER_JINGHUA),y)
 obj-$(CONFIG_SOC_CAMERA_GC0329)	+= gc0329_tr726c_jinghua.o
 else
+ifeq ($(CONFIG_TCHIP_TR726C_CUSTOMER_HUIKE),y)
+obj-$(CONFIG_SOC_CAMERA_GC0329)	+= gc0309_tr726c_huike.o
+else
 obj-$(CONFIG_SOC_CAMERA_GC0329)	+= gc0329.o
+endif
 endif
 #obj-$(CONFIG_SOC_CAMERA_SP0718)	+= sp0718.o
 obj-$(CONFIG_SOC_CAMERA_SP0838)	+= sp0838.o

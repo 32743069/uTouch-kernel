@@ -61,6 +61,10 @@ Comprehensive camera device registration:
 #elif defined(CONFIG_TCHIP_TR726C_CUSTOMER_GBXY)
 #define TC_F_GC0328
 
+#elif defined(CONFIG_TCHIP_TR726C_CUSTOMER_HUIKE)
+#define TC_B_GC2035
+#define TC_F_GC0309
+
 #else //all for public
 //back
 #define TC_B_BF3920

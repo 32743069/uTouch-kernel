@@ -184,6 +184,8 @@ static void init_customer(void)
 	strcat(tchip_version,"_gbxy");
 #elif defined (CONFIG_TCHIP_TR726C_CUSTOMER_AIPU)
 	strcat(tchip_version,"_aipu");
+#elif defined (CONFIG_TCHIP_TR726C_CUSTOMER_HUIKE)
+	strcat(tchip_version,"_Huike");
 #endif
 }
 static void init_JogballType(void)

@@ -22,12 +22,20 @@
 #include "icn85xx.h"
 
 #if COMPILE_FW_WITH_DRIVER
-#if defined(CONFIG_LCD_RK2926_V86)
-#include "icn85xx_fw_TN.h"
+#if defined(CONFIG_LCD_RK2926_V86) //public tn 
+
+#if defined(CONFIG_TCHIP_TR726C_CUSTOMER_HUIKE)
+#include "icn85xx_fw_TN_tr726c_huike.h"
+//#elif defined(CONFIG_TCHIP_TR726C_CUSTOMER_AIPU)
+//#include "icn85xx_fw_TN_tr726c_aipu.h"
 #else
+#include "icn85xx_fw_TN.h"
+#endif
+
+#else //sunsumg ips
 #include "icn85xx_fw.h"
-#endif
-#endif
+#endif //CONFIG_LCD_RK2926_V86
+#endif //COMPILE_FW_WITH_DRIVER
 
 static struct i2c_client *this_client;
 short log_rawdata[COL_NUM][ROW_NUM] = {{0}};
