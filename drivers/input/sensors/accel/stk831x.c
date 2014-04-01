@@ -1,4 +1,5 @@
 /* drivers/input/sensors/access/stk831x.c
+/* drivers/input/sensors/access/stk831x.c
  *
  * Copyright (C) 2012-2015 ROCKCHIP.
  * Author: luowei <lw@rock-chips.com>
@@ -121,7 +122,7 @@ struct stk831x_data
 };
 static int suspend_flag = 0;
 static int is_reading_reg = 0;
-#define STK831X_INIT_ODR		3		//2:100Hz, 3:50Hz, 4:25Hz
+#define STK831X_INIT_ODR		2		//2:100Hz, 3:50Hz, 4:25Hz
 const static int STK831X_SAMPLE_TIME[6] = {2500, 5000, 10000, 20000, 40000, 80000};
 static int event_since_en = 0;
 static int event_since_en_limit = 20;
@@ -168,11 +169,11 @@ static int event_since_en_limit = 20;
 #define STK_PERMISSION_THREAD
 
 //#define STK_LOWPASS
-#define STK_FIR_LEN 4
+#define STK_FIR_LEN 6
 
 #define STK_TUNE
 #ifdef CONFIG_SENSORS_STK8312
-	#define STK_TUNE_XYOFFSET 4
+	#define STK_TUNE_XYOFFSET 5
 	#define STK_TUNE_ZOFFSET 6
 	#define STK_TUNE_NOISE 5
 #elif defined (CONFIG_SENSORS_STK8313)
@@ -183,7 +184,7 @@ static int event_since_en_limit = 20;
 #define STK_TUNE_NUM 100
 #define STK_TUNE_DELAY 100
 
-#define STK_ZG_FILTER
+//#define STK_ZG_FILTER
 #ifdef CONFIG_SENSORS_STK8312
 	#define STK_ZG_COUNT	1
 #elif defined (CONFIG_SENSORS_STK8313)
@@ -2507,8 +2508,9 @@ static int __init gsensor_stk831x_init(void)
 	int result = 0;
 	int type = ops->type;
 	int odr = STK831X_INIT_ODR;
-	
-	if(odr == 2)
+	if(odr == 1)
+		getdelay = 5;
+	else if(odr == 2)
 		getdelay = 10;
 	else if(odr == 3)
 		getdelay = 20;
@@ -2542,3 +2544,4 @@ static void __exit gsensor_stk831x_exit(void)
 
 module_init(gsensor_stk831x_init);
 module_exit(gsensor_stk831x_exit);
+

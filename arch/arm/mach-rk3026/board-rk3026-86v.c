@@ -636,7 +636,11 @@ static int stk831x_init_platform_hw(void)
 static struct sensor_platform_data stk831x_info = {
 	.type = SENSOR_TYPE_ACCEL,
 	.irq_enable = 0,
+#ifdef CONFIG_TCHIP_TR726C_CUSTOMER_JINGHUA 
+	.poll_delay_ms = 10,
+#else
 	.poll_delay_ms = 30,
+#endif
         .init_platform_hw = stk831x_init_platform_hw,
 	#if defined(CONFIG_TCHIP_MACH_TR726C)
 	//.orientation = { 0, 1, 0,1, 0, 0, 0, 0, -1},
