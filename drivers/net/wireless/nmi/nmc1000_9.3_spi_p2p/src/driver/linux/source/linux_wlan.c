@@ -3552,6 +3552,7 @@ nic->mac_opened=0;
 }
 
 
+int tchip_nmc1000_init_ok = 0;
 /*The 1st function called after module inserted*/
 static int __init init_nmc_driver(void){
 	uint32_t is_mac_opened_yet = 0;
@@ -3613,6 +3614,7 @@ NMI_PRINTF("DEVICE POWER UP\n");
 	//setup_timer(&custom_gpio_timer,(void(*)(unsigned long))check_DCDET,0);
 
 	PRINT_D(INIT_DBG,"Device has been initialized successfully\n");
+	tchip_nmc1000_init_ok = 1;
     return 0;
 #endif
 }

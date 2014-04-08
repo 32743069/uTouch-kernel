@@ -2935,6 +2935,7 @@ void custom_irqn_to_wifi_int(uint32_t protect)
 
 }
 
+extern int tchip_nmc1000_init_ok ;
 void nmc1000_gpio_set_value(int gpio_num,int v)
 {
 	uint32_t reg = 0;
@@ -2943,6 +2944,12 @@ void nmc1000_gpio_set_value(int gpio_num,int v)
 	
 	printk(">> GPIO_RSET[%d]: %d -mac_open: %d\n",gpio_num,v,is_mac_open);
 	//printk(">> GPIO_SET: %d\n",is_mac_open);
+
+	if ( tchip_nmc1000_init_ok == 0 ){
+		printk(KERN_ERR "###########  error for not init nmc1000 driver\n");
+		return ;
+	}
+
 	if(gpio_num != 1 && gpio_num != 3 && gpio_num != 4)
 	{
 		printk("[nmc1000] GPIO number is out of range\n");
@@ -3001,6 +3008,11 @@ int nmc1000_gpio_get_value(int gpio_num)
 	uint32_t mac_state_changed = 0;
 	printk(">> GPIO_RGET[%d] - mac_open:%d \n",gpio_num,is_mac_open);
 	
+	if ( tchip_nmc1000_init_ok == 0 ){
+		printk(KERN_ERR "###########  error for not init nmc1000 driver\n");
+		return -1 ;
+	}
+
 	if(gpio_num != 1 && gpio_num != 3 && gpio_num != 4 && gpio_num != 6)
 	{
 		printk("[nmc1000] GPIO number is out of range\n");
