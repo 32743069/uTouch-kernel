@@ -114,12 +114,18 @@ static int batt_table[2*BATT_NUM+6] =
 */
 static int batt_table[2*BATT_NUM+6] =
 {
-#if defined (CONFIG_TCHIP_MACH_TR726C)
+#if defined (CONFIG_TCHIP_TR726C_CUSTOMER_JINGHUA)
 	0x4B434F52,0x7461625F,0x79726574,0,100,100,
 //	3450, 3550, 3600, 3640, 3680, 3720, 3760, 3800, 3850, 3900, 3950,//, 4020, 
 //	3670, 3770, 3820, 3850, 3880, 3920, 3960, 4000, 4050, 4110, 4180// 4160
        3619, 3694, 3744, 3767, 3786, 3812, 3842, 3892, 3945, 4002, 4070,
        3760, 3817, 3861, 3886, 3899, 3930, 3962, 4012, 4056, 4114, 4173
+#elif defined (CONFIG_TCHIP_TR726C_CUSTOMER_HUIKE)
+	0x4B434F52,0x7461625F,0x79726574,0,100,100,
+	//3500, 3550, 3600, 3640, 3680, 3720, 3760, 3800, 3850, 3900, 3950,//, 4020, 
+	//3720, 3770, 3820, 3850, 3880, 3920, 3960, 4000, 4050, 4110, 4180// 4160
+       3570, 3610, 3640,  3694, 3747, 3786, 3812, 3862, 3912, 3965, 4012, //4070,
+       3700, 3740, 3770,  3817, 3866, 3909, 3930, 3982, 4032, 4076, 4164 //4173
 #else
 	0x4B434F52,0x7461625F,0x79726574,0,100,100,
 	3621, 3712, 3744, 3792, 3817, 3843, 3885, 3931, 3996, 4060, 4135,  //discharge
@@ -528,10 +534,6 @@ static int  get_ac_status(struct rk30_adc_battery_data *bat){
 	
 	struct rk30_adc_battery_platform_data *pdata = bat->pdata;
 	int status = 0;
-	#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
-	status = nmc1000_battery_get_status();
-	return status;
-	#endif
 	if (pdata->dc_det_pin != INVALID_GPIO){
 	       	if (gpio_get_value (pdata->dc_det_pin) == pdata->dc_det_level){
 				status = 1;
@@ -614,11 +616,11 @@ static int rk_battery_get_status(struct rk30_adc_battery_data *bat)
 
 
 #if defined (CONFIG_BATTERY_RK30_AC_CHARGE)
-	//#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
-	//ac_ac_charging = nmc1000_battery_get_status();
-	//#else
+	#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+	ac_ac_charging = nmc1000_battery_get_status();
+	#else
 	ac_ac_charging = get_ac_status(bat);
-	//#endif
+	#endif
 	if(1 == ac_ac_charging)
 		charge_on = 1;
 #endif
@@ -1476,8 +1478,8 @@ static void rk30_adc_battery_poweron_capacity_check(struct rk30_adc_battery_data
 		else
 			bat ->bat_capacity = (new_capacity < old_capacity) ? new_capacity : old_capacity;  //avoid the value of capacity increase 
 		#endif
-		if(bat->bat_capacity == 100)
-			bat->bat_capacity = 99;
+		//if(bat->bat_capacity == 100)
+		//	bat->bat_capacity = 99;
 		if(bat->bat_capacity == 0)
 			bat->bat_capacity =1;
 	}
