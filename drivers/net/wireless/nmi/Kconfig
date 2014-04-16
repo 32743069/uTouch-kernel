@@ -34,7 +34,15 @@ choice
 		bool "Select the Realese 9.30 Driver for NMC1000 "
 	config NMC1XXX_SPI_722_FREQUENCY_TEST_VERSION
 		bool "Select the FREQUENCY TEST 7.22 Driver for NMC1000 "
+	config NMC1XXX_936_VERSION
+	    bool "Select NMC1000 9.36 Version"
+	config NMC1XXX_936_JOHNNY_VERSION
+	    bool "Select NMC1000 9.36 Version from Johnny."
+	config NMC1XXX_937_JOHNNY_VERSION
+	    bool "Select NMC1000 9.37 Version from Johnny."
 endchoice
+
+
 
 config SDIO_HARD_IRQ
         depends on NMC1XXX_WIFI_MODULE && NMC1XXX_USE_SDIO
@@ -71,7 +79,3 @@ config NMC1XXX_ENABLE_DEBUGFS
 	default n
 	---help---
 	   Export status information via debugfs.
-
-
-
-
