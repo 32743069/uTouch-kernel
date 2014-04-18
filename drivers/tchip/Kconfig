@@ -275,6 +275,8 @@ choice
 		bool " Tchip Customer -- Select AI PU"
 	config TCHIP_TR726C_CUSTOMER_HUIKE
 		bool " Tchip Customer -- Select Hui Ke"
+	config TCHIP_TR726C_CUSTOMER_XFH
+		bool " Tchip Customer -- Select xin fei hong"
 endchoice
 
 
