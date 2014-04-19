@@ -413,7 +413,7 @@ void custom_bus_suspend(void)
 
 	custom_lock_bus(g_mac_open);
 		custom_chip_sleep_manually();
-	custom_unlock_bus(g_mac_open);
+	//custom_unlock_bus(g_mac_open);
 
 	/* Call wakeup register callback function */
 	tchip_dc_det_irq_init(GPIO_NUM, IRQF_TRIGGER_FALLING);	
@@ -425,7 +425,7 @@ void custom_bus_resume(void)
 	
 	gpio_request(GPIO_NUM, "NMC_INTR");
 	gpio_direction_input(GPIO_NUM);	
-
+	custom_unlock_bus(g_mac_open);
 	custom_irqn_to_wifi_int(1);
 
 	if(g_mac_open)
