@@ -125,7 +125,7 @@ static struct rk_sensor_reg sensor_init_data[] ={
     // AE
     {0x00, 0x02},
     {0x10, 0x84}, 
-    {0x11, 0x10},                    
+    {0x11, 0x08},   //0x10                 
     {0x12, 0x70},//0x70,//78,//,??-----------
     {0x14, 0x60},//0x70,//78,//-----------
     {0x34, 0x96},//96},              
@@ -936,7 +936,6 @@ sensor_probe_default_code();
 sensor_remove_default_code();
 
 sensor_driver_default_module_code();
-
 
 
 
