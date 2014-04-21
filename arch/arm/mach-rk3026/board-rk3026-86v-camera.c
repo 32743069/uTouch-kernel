@@ -65,6 +65,10 @@ Comprehensive camera device registration:
 #define TC_B_GC2035
 #define TC_F_GC0309
 
+#elif defined(CONFIG_TCHIP_TR726C_CUSTOMER_XFH)
+#define TC_B_SIV121D
+#define TC_F_SIV121D
+
 #else //all for public
 //back
 #define TC_B_BF3920
@@ -72,6 +76,7 @@ Comprehensive camera device registration:
 #define TC_B_GC2035
 #define TC_B_GC0308
 #define TC_B_SP0838
+#define TC_B_SIV121D
 //fornt
 #define TC_F_GC0308
 #define TC_F_GC0328
@@ -79,6 +84,7 @@ Comprehensive camera device registration:
 #define TC_F_GC0311
 #define TC_F_GC0309
 #define TC_F_SP0838
+#define TC_F_SIV121D
 
 #endif
 
@@ -208,6 +214,25 @@ static struct rkcamera_platform_data new_camera[] = {
 			    24),
 #endif
 
+#ifdef TC_B_SIV121D
+    new_camera_device_ex(RK29_CAM_SENSOR_SIV121D,
+			    back,
+			    90,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    TC_CAMERA_BACK_DN_PIN,
+			    CONS(RK29_CAM_SENSOR_SIV121D,_PWRDN_ACTIVE),
+			    false,
+			    CONS(RK29_CAM_SENSOR_SIV121D,_FULL_RESOLUTION),
+			    0,
+			    1,
+			    250000,
+			    CONS(RK29_CAM_SENSOR_SIV121D,_I2C_ADDR),
+			    0,
+			    24),
+#endif
 
        //##############3   fornt Camera
 /*
@@ -342,8 +367,25 @@ new_camera_device(RK29_CAM_SENSOR_GC0308,
 			    24),
 #endif
 
-
-
+#ifdef TC_F_SIV121D
+    new_camera_device_ex(RK29_CAM_SENSOR_SIV121D,
+			    front,
+			    270,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    TC_CAMERA_FRONT_DN_PIN,
+			    CONS(RK29_CAM_SENSOR_SIV121D,_PWRDN_ACTIVE),
+			    false,
+			    CONS(RK29_CAM_SENSOR_SIV121D,_FULL_RESOLUTION),
+			    0,
+			    1,
+			    250000,
+			    CONS(RK29_CAM_SENSOR_SIV121D,_I2C_ADDR),
+			    0,
+			    24),
+#endif
 
     new_camera_device_end
 };

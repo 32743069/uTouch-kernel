@@ -419,7 +419,7 @@
 #define bf3920_I2C_ADDR             0xde 
 
 #define siv120b_I2C_ADDR             INVALID_VALUE           
-#define siv121d_I2C_ADDR             INVALID_VALUE           
+#define siv121d_I2C_ADDR             0x66           
 #define sid130B_I2C_ADDR             0x37
 
 #define hi253_I2C_ADDR             0x40
@@ -479,7 +479,7 @@
 #define bf3920_PWRDN_ACTIVE             0x01 
 
 #define siv120b_PWRDN_ACTIVE             INVALID_VALUE           
-#define siv121d_PWRDN_ACTIVE             INVALID_VALUE           
+#define siv121d_PWRDN_ACTIVE             0x66           
 #define sid130B_PWRDN_ACTIVE             0x37
 
 #define hi253_PWRDN_ACTIVE             0x01
