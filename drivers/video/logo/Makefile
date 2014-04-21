@@ -69,6 +69,9 @@ endif
 ifeq ($(CONFIG_TCHIP_TR726C_CUSTOMER_HUIKE),y)
 tchip_customer_logo_name := logo_tr726c_huike.ppm
 endif
+ifeq ($(CONFIG_TCHIP_TR726C_CUSTOMER_XFH),y)
+tchip_customer_logo_name := logo_tr726c_xfh.ppm
+endif
 
 # Create commands like "pnmtologo -t mono -n logo_mac_mono -o ..."
 quiet_cmd_logo = LOGO    $@
