@@ -680,7 +680,7 @@ NMI_Bool gbIPaddrObtained = NMI_FALSE;
 static int dev_state_ev_handler(struct notifier_block *this, unsigned long event, void *ptr)
 {
 	struct in_ifaddr *dev_iface = (struct in_ifaddr *)ptr;
-    struct NMI_WFI_priv* priv;
+	struct NMI_WFI_priv* priv;
 	tstrNMI_WFIDrv * pstrWFIDrv;
 	struct net_device * dev;
 	NMI_Uint8 *pIP_Add_buff;
@@ -689,24 +689,11 @@ static int dev_state_ev_handler(struct notifier_block *this, unsigned long event
 	NMI_Uint8 null_ip[4]={0};
 	char wlan_dev_name[5]="wlan0";
 
-	if(dev_iface == NULL)
-    {
-    		NMI_PRINTF("dev_iface = NULL\n");
-    		return NOTIFY_DONE;
-    }
-	
-	dev = (struct net_device *)dev_iface->ifa_dev->dev;
-    priv= wiphy_priv(dev->ieee80211_ptr->wiphy);
-
-	if(!((tstrNMI_WFIDrv *)priv->hNMIWFIDrv)) {
-		printk("%s: hNMIWFIDrv is NULL\n", __FUNCTION__);
+	if(dev_iface == NULL || dev_iface->ifa_dev == NULL || dev_iface->ifa_dev->dev == NULL)
+	{
+		NMI_PRINTF("dev_iface = NULL\n");
 		return NOTIFY_DONE;
 	}
-	
-	pstrWFIDrv = (tstrNMI_WFIDrv *)priv->hNMIWFIDrv;
-	nic = netdev_priv(dev);
-
-	printk("dev_state_ev_handler +++\n");	// tony
 
 	if( (memcmp(dev_iface->ifa_label , "wlan0", 5) ) &&( memcmp(dev_iface->ifa_label , "p2p0", 4) ) )
 	{
@@ -714,18 +701,31 @@ static int dev_state_ev_handler(struct notifier_block *this, unsigned long event
 		return NOTIFY_DONE;
 	}
 
-	if(pstrWFIDrv == NULL)
-   	{
-   		PRINT_ER("Driver handler = NULL !\n");
-   	}
+	
+	dev  = (struct net_device *)dev_iface->ifa_dev->dev;
+	if(dev->ieee80211_ptr == NULL || dev->ieee80211_ptr->wiphy == NULL)
+	{
+		NMI_PRINTF("No Wireless registerd\n");
+		return NOTIFY_DONE;
+	}
+
+    	priv = wiphy_priv(dev->ieee80211_ptr->wiphy);
+	if(priv == NULL)
+	{
+		NMI_PRINTF("No Wireless Priv\n");
+		return NOTIFY_DONE;
+	}
+	pstrWFIDrv = (tstrNMI_WFIDrv *)priv->hNMIWFIDrv;
+	nic = netdev_priv(dev);
+	if(nic == NULL || pstrWFIDrv == NULL)
+	{
+		NMI_PRINTF("No Wireless Priv\n");
+		return NOTIFY_DONE;
+	}
+ 
+	printk("dev_state_ev_handler +++\n");	// tony	
+
    
-#if 1 // add by ruan(TCHIP), not used anymore in Islam's latest changes
-    if( 0 != strcmp(dev_iface->ifa_label,"wlan0"))
-    {
-    	NMI_PRINTF("dev_iface != wlan0\n");
-    	return NOTIFY_DONE;
-    }
-#endif
     switch (event) {
 
 		case NETDEV_UP:
