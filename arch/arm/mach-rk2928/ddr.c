@@ -146,8 +146,7 @@ typedef struct tagGPIO_IOMUX
 #define DDR_RANK_COUNT   (11)
 #define DDR_COL_COUNT    (9)
 #define DDR_BANK_COUNT   (8)
-#define DDR_ROW0_COUNT   (6)
-#define DDR_ROW1_COUNT   (4)
+#define DDR_ROW_COUNT    (6)
 /********************************
 GRF 寄存器中GRF_OS_REG1 存ddr rank，type等信息
 GRF_SOC_CON2寄存器中控制c_sysreq信号向pctl发送进入low power 请求
@@ -901,7 +900,7 @@ Notes   :
 ----------------------------------------------------------------------*/
 uint32 ddr_get_row(void)
 {
-    return (13+((pGRF_Reg->GRF_OS_REG[1] >> DDR_ROW0_COUNT) & 0x3));
+    return (13+((pGRF_Reg->GRF_OS_REG[1] >> DDR_ROW_COUNT) & 0x3));
 }
 
 /*----------------------------------------------------------------------
@@ -2396,21 +2395,13 @@ Notes   :
 uint32 ddr_get_cap(void)
 {
     uint32 value;
-    uint32 cs, bank, row, col,row1;
+    uint32 cs, bank, row, col;
     value = pGRF_Reg->GRF_OS_REG[1];
     bank = (((value >> DDR_BANK_COUNT) & 0x1)? 2:3);
-    row = (13+((value >> DDR_ROW0_COUNT) & 0x3));
+    row = (13+((value >> DDR_ROW_COUNT) & 0x3));
     col = (9 + ((value >> DDR_COL_COUNT)&0x3));
     cs = (1 + ((value >> DDR_RANK_COUNT)&0x1)); 
-    if(cs>1)
-    {
-        row1=(13+((value >> DDR_ROW1_COUNT) & 0x3));
-        return ((1 << (row + col + bank + 1))+(1 << (row1 + col + bank + 1)));
-    }
-    else
-    {
-        return (1 << (row + col + bank + 1));
-    }
+    return ((1 << (row + col + bank + 1))*cs);
 }
 EXPORT_SYMBOL(ddr_get_cap);
 
