@@ -1195,6 +1195,11 @@ config SOC_CAMERA_SP0838
 	help
 	  This is a sp0838 camera driver for rockchip
 	  
+config SOC_CAMERA_SP0A19
+	tristate "sp0a19 camera support for rockchip"
+	depends on SOC_CAMERA && I2C
+	help
+	  This is a sp0a19 camera driver for rockchip
 
 config SOC_CAMERA_SP2518
 	tristate "sp2518 camera support for rockchip"
