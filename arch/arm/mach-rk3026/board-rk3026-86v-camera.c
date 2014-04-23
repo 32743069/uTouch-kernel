@@ -129,7 +129,11 @@ static struct rkcamera_platform_data new_camera[] = {
 #ifdef TC_B_BF3703
     new_camera_device_ex(RK29_CAM_SENSOR_BF3703,
                         back,
+		#if  defined(CONFIG_TCHIP_TR726C_CUSTOMER_AIPU)
+			90,
+                #else
                         0,
+                #endif
                         INVALID_VALUE,
                         INVALID_VALUE,
                         INVALID_VALUE,
@@ -250,7 +254,11 @@ new_camera_device(RK29_CAM_SENSOR_GC0308,
 #ifdef TC_F_GC0311
     new_camera_device_ex(RK29_CAM_SENSOR_GC0311,
 			    front,
-			    270,
+			#if  defined(CONFIG_TCHIP_TR726C_CUSTOMER_AIPU)
+			    90,
+			#else
+                            270,
+			#endif
 			    INVALID_VALUE,
 			    INVALID_VALUE,
 			    INVALID_VALUE,
