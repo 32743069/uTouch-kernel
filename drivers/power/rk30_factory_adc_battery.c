@@ -1320,20 +1320,27 @@ static void rk_ac_charger(struct rk30_adc_battery_data *bat)
 					}
 
 			}else{
+			/*对于无法达到设定的最高电压，电压又在上下波动的电池，软件计数总是被打断，电量不上升，
+			这里去掉capacity与capacitytmp的比较，直接软件计数。
+			*/
+			#if 0
 				if (capacity > bat->capacitytmp){
 					bat->gBatCapacityChargeCnt = 0;
 				}
 				else{
+			#endif
 
-					if ((bat->bat_capacity >= 85) &&(bat->gBatCapacityChargeCnt > NUM_CHARGE_MAX_SAMPLE)){
-						bat->gBatCapacityChargeCnt = (NUM_CHARGE_MAX_SAMPLE - NUM_CHARGE_MID_SAMPLE);
+					if (/*(bat->bat_capacity >= 85) &&*/(bat->gBatCapacityChargeCnt > NUM_CHARGE_MAX_SAMPLE)){
+						bat->gBatCapacityChargeCnt = 0;
 
 						if (bat->bat_capacity <= 99){
 							bat->bat_capacity++;
 							bat->bat_change  = 1;
 						}
 					}
+			#if 0
 				}
+			#endif
 				
 
 			}            
