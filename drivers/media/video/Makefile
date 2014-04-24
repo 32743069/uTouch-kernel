@@ -120,6 +120,8 @@ obj-$(CONFIG_SOC_CAMERA_BF3703)         += bf3703.o
 obj-$(CONFIG_SOC_CAMERA_GC2015)		+= gc2015.o
 ifeq ($(CONFIG_TCHIP_TR726C_CUSTOMER_HUIKE),y)
 obj-$(CONFIG_SOC_CAMERA_GC2035)         += gc2035_tr726c_huike.o
+else ifeq ($(CONFIG_TCHIP_TR726C_CUSTOMER_XFH),y)
+obj-$(CONFIG_SOC_CAMERA_GC2035)         += gc2035_tr726c_xfh.o
 else
 obj-$(CONFIG_SOC_CAMERA_GC2035)         += gc2035.o
 endif

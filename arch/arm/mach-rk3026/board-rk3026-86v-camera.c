@@ -73,7 +73,7 @@ Comprehensive camera device registration:
 #elif defined(CONFIG_TCHIP_TR726C_CUSTOMER_XFH)
 #define TC_B_SIV121D
 #define TC_F_SIV121D
-
+#define TC_B_GC2035
 #else //all for public
 //back
 #define TC_B_BF3920
@@ -160,7 +160,7 @@ static struct rkcamera_platform_data new_camera[] = {
 #ifdef TC_B_GC2035
     new_camera_device_ex(RK29_CAM_SENSOR_GC2035,
 			    back,
-		#if defined(CONFIG_TCHIP_TR726C_CUSTOMER_HUIKE)
+		#if(defined(CONFIG_TCHIP_TR726C_CUSTOMER_HUIKE)||defined(CONFIG_TCHIP_TR726C_CUSTOMER_XFH))
 			    90,
 		#else
 			    0,
