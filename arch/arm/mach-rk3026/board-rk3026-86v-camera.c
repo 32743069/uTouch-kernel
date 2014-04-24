@@ -48,6 +48,8 @@ Comprehensive camera device registration:
 #if   defined(CONFIG_TCHIP_TR726C_CUSTOMER_JINGHUA)
 #define TC_B_GC0308
 #define TC_F_GC0329
+#define TC_F_SP0838
+#define TC_B_SP0838
 
 #elif defined(CONFIG_TCHIP_TR726C_CUSTOMER_CUBE)
 #define TC_F_GC0308
@@ -182,7 +184,11 @@ static struct rkcamera_platform_data new_camera[] = {
 #ifdef TC_B_SP0838
     new_camera_device_ex(RK29_CAM_SENSOR_SP0838,
 			    back,
+	#if   defined(CONFIG_TCHIP_TR726C_CUSTOMER_JINGHUA)
+			    90,
+	#else
 			    0,
+	#endif
 			    INVALID_VALUE,
 			    INVALID_VALUE,
 			    INVALID_VALUE,
