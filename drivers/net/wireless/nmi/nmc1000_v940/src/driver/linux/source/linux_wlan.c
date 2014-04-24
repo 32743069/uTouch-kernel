@@ -592,7 +592,7 @@ static int DebuggingThreadTask(void* vp)
 	{
 		if(g_linux_wlan->nmc1000_initialized)
 		{
-			printk("*** Debug Thread Running ***\n");
+			PRINT_D(GENERIC_DBG,"*** Debug Thread Running ***\n");
 			if(!linux_wlan_lock_timeout(&g_linux_wlan->wdt_thread_ended,6000))
 			{
 				printk("Exit debug thread\n");
@@ -2030,33 +2030,33 @@ void nmc1000_wlan_deinit(linux_wlan_t *nic) {
 		  #endif
 		#endif
 		
-		printk("[%s:%d]>>>>\n",__FUNCTION__,__LINE__);		
+		printk("[%s:%d]>>>>\n",__FUNCTION__,__LINE__);
 		/* not sure if the following unlocks are needed or not*/
 		if(&g_linux_wlan->rxq_event != NULL){
 			linux_wlan_unlock(&g_linux_wlan->rxq_event);
 			}
-		printk("[%s:%d]>>>>\n",__FUNCTION__,__LINE__);		
+		PRINT_D(INIT_DBG,"[%s:%d]>>>>\n",__FUNCTION__,__LINE__);
 		if(&g_linux_wlan->txq_event != NULL){
 			linux_wlan_unlock(&g_linux_wlan->txq_event);
 			}
 
-		printk("[%s:%d]>>>>\n",__FUNCTION__,__LINE__);		
+		PRINT_D(INIT_DBG,"[%s:%d]>>>>\n",__FUNCTION__,__LINE__);
 	#if (RX_BH_TYPE == RX_BH_WORK_QUEUE)
 		/*Removing the work struct from the linux kernel workqueue*/
 		if(&g_linux_wlan->rx_work_queue != NULL)
 			flush_work(&g_linux_wlan->rx_work_queue);
-		printk("[%s:%d]>>>>\n",__FUNCTION__,__LINE__);				
+		PRINT_D(INIT_DBG,"[%s:%d]>>>>\n",__FUNCTION__,__LINE__);
 	#elif (RX_BH_TYPE == RX_BH_KTHREAD)
 		//if(&nic->rx_sem != NULL)
 			//linux_wlan_unlock(&nic->rx_sem);
 	#endif
-	printk("[%s:%d]>>>>\n",__FUNCTION__,__LINE__);		
+	PRINT_D(INIT_DBG,"[%s:%d]>>>>\n",__FUNCTION__,__LINE__);
 	PRINT_D(INIT_DBG,"Deinitializing Threads\n");
 	wlan_deinitialize_threads(nic);
-	printk("[%s:%d]>>>>\n",__FUNCTION__,__LINE__);			
+	PRINT_D(INIT_DBG,"[%s:%d]>>>>\n",__FUNCTION__,__LINE__);
 	PRINT_D(INIT_DBG,"Deinitializing IRQ\n");
 	deinit_irq(g_linux_wlan);
-	printk("[%s:%d]>>>>\n",__FUNCTION__,__LINE__);		
+	PRINT_D(INIT_DBG,"[%s:%d]>>>>\n",__FUNCTION__,__LINE__);
 
 	if(&g_linux_wlan->oup != NULL){
 		if(g_linux_wlan->oup.wlan_stop != NULL)
@@ -3268,7 +3268,7 @@ int mac_ioctl(struct net_device *ndev, struct ifreq *req, int cmd){
 	NMI_Sint32 s32Error = NMI_SUCCESS;
 
 
-	printk("drivre IO control\n");
+	PRINT_D(GENERIC_DBG,"drivre IO control\n");
 	//struct iwreq *wrq = (struct iwreq *) req;	// tony moved to case SIOCSIWPRIV
 	#ifdef USE_WIRELESS
 	nic = netdev_priv(ndev);
