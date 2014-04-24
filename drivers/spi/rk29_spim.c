@@ -47,7 +47,7 @@ QUICK_TRANSFER用于快速传输，同时可指定半双工或全双工，
 #define DBG(x...)
 #endif
 
-#define DMA_BUFFER_SIZE (PAGE_SIZE<<4)
+#define DMA_BUFFER_SIZE (PAGE_SIZE)
 #define DMA_MIN_BYTES 32 //>32x16bits FIFO
 
 
