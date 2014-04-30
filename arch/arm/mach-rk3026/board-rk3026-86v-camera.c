@@ -637,7 +637,7 @@ static int tr726c_powerdn_usr_cb(struct rk29camera_gpio_res *res,int level)
 	int pin=3;
 	if(strstr(res->dev_name,"front") == NULL) 
 		pin = 4;
-	printk(KERN_ERR "#########  camera pin is %d, level=%d \n",pin,level);
+	//printk(KERN_ERR "#########  camera pin is %d, level=%d \n",pin,level);
 
 	nmc1000_gpio_set_value(pin, level);
 	//nmc1000_gpio_set_value(3,0);
