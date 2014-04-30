@@ -111,11 +111,11 @@ void tr726c_set_spkctl_en(int en)
  	if( en ){ //open 
 		//ncm1000_gpio_set_value(int gpio_num, int level);
 		nmc1000_gpio_set_value(1, 1);
-		printk(KERN_ERR "#########3 read spk pin %d\n",nmc1000_gpio_get_value(1));
+		//printk(KERN_ERR "#########3 read spk pin %d\n",nmc1000_gpio_get_value(1));
  	}else{
 
 		nmc1000_gpio_set_value(1, 0);
-		printk(KERN_ERR "#########3 read spk pin %d\n",nmc1000_gpio_get_value(1));
+		//printk(KERN_ERR "#########3 read spk pin %d\n",nmc1000_gpio_get_value(1));
  	}
 }
 #endif
