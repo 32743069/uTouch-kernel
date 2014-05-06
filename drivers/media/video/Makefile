@@ -116,7 +116,11 @@ obj-$(CONFIG_SOC_CAMERA_GC0309)		+= gc0309.o
 endif
 obj-$(CONFIG_SOC_CAMERA_GC0311)         += gc0311.o
 obj-$(CONFIG_SOC_CAMERA_BF3920)         += bf3920.o
+ifeq ($(CONFIG_TCHIP_TR726C_CUSTOMER_AIPU),y)
+obj-$(CONFIG_SOC_CAMERA_BF3703)         += bf3703_tr726c_aipu.o
+else
 obj-$(CONFIG_SOC_CAMERA_BF3703)         += bf3703.o
+endif
 obj-$(CONFIG_SOC_CAMERA_GC2015)		+= gc2015.o
 ifeq ($(CONFIG_TCHIP_TR726C_CUSTOMER_HUIKE),y)
 obj-$(CONFIG_SOC_CAMERA_GC2035)         += gc2035_tr726c_huike.o
