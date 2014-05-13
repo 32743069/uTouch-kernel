@@ -265,8 +265,10 @@ choice
 
 	config TCHIP_TR726C_CUSTOMER_PUBLIC
 		bool " Tchip Customer -- Select PUBLIC"
+		select KCONFIG_DDR_TYPE_SAMSUNG
 	config TCHIP_TR726C_CUSTOMER_JINGHUA
 		bool " Tchip Customer -- Select JING HUA"
+		select KCONFIG_DDR_TYPE_KINGSTON
 	config TCHIP_TR726C_CUSTOMER_CUBE
 		bool " Tchip Customer -- Select CUBE"
 	config TCHIP_TR726C_CUSTOMER_GBXY
@@ -279,7 +281,28 @@ choice
 		bool " Tchip Customer -- Select xin fei hong"
 endchoice
 
+#------------DDR type----------------
+config KCONFIG_DDR_TYPE_SAMSUNG
+		bool
+config KCONFIG_DDR_TYPE_KINGSTON
+		bool
+config KCONFIG_DDR_TYPE_ELIXIR
+		bool
 
+choice
+	prompt "CUSTOMER DDR TYPE"
+	default  DDR_TYPE_SAMSUNG
+
+	config  DDR_TYPE_SAMSUNG
+		bool  "samsung ddr"
+		depends on KCONFIG_DDR_TYPE_SAMSUNG
+	config  DDR_TYPE_KINGSTON
+		bool  "kingston ddr"
+		depends on KCONFIG_DDR_TYPE_KINGSTON
+	config  DDR_TYPE_ELIXIR
+		bool  "elixir ddr"
+		depends on KCONFIG_DDR_TYPE_ELIXIR
+endchoice
 
 
 endmenu
