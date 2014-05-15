@@ -27,7 +27,7 @@
 
 typedef uint32_t uint32 ;
 
-#if defined(CONFIG_DDR_TYPE_KINGSTON)
+#if defined(CONFIG_TCHIP_DDR_TYPE_KINGSTON)
 #define DDR3_DDR2_DLL_DISABLE_FREQ    (250)  // 颗粒dll disable的频率
 #define DDR3_DDR2_ODT_DISABLE_FREQ    (250)  //颗粒odt disable的频率
 #else
