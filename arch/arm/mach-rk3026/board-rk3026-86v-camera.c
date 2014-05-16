@@ -83,6 +83,7 @@ Comprehensive camera device registration:
 #define TC_B_SP0838
 #define TC_B_SP0A19
 #define TC_B_SIV121D
+#define TC_B_SP2518
 //fornt
 #define TC_F_GC0308
 #define TC_F_GC0328
@@ -256,7 +257,25 @@ static struct rkcamera_platform_data new_camera[] = {
 			    0,
 			    24),
 #endif
-
+#ifdef TC_B_SP2518
+    new_camera_device_ex(RK29_CAM_SENSOR_SP2518,
+			    back,
+			    90,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    INVALID_VALUE,
+			    TC_CAMERA_BACK_DN_PIN,
+			    CONS(RK29_CAM_SENSOR_SP2518,_PWRDN_ACTIVE),
+			    false,
+			    CONS(RK29_CAM_SENSOR_SP2518,_FULL_RESOLUTION),
+			    0,
+			    1,
+			    250000,
+			    CONS(RK29_CAM_SENSOR_SP2518,_I2C_ADDR),
+			    0,
+			    24),
+#endif
        //##############3   fornt Camera
 /*
 
