@@ -26,6 +26,7 @@ obj-$(CONFIG_NMC1XXX_936_VERSION)	+= nmi/nmc1000_v936/
 obj-$(CONFIG_NMC1XXX_936_JOHNNY_VERSION)	+= nmi/nmc1000_v936_johnny/
 obj-$(CONFIG_NMC1XXX_937_JOHNNY_VERSION)	+= nmi/nmc1000_v937_johnny/
 obj-$(CONFIG_NMC1XXX_SPI_940_VERSION)	+= nmi/nmc1000_v940/
+obj-$(CONFIG_NMC1XXX_SPI_944_VERSION)	+= nmi/nmc1000_v944/
 
 #obj-m	+= wlan/
 obj-$(CONFIG_MTK_COMBO_WIFI)	+= combo_mt66xx/
