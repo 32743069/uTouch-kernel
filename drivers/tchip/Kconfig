@@ -265,7 +265,7 @@ choice
 
 	config TCHIP_TR726C_CUSTOMER_PUBLIC
 		bool " Tchip Customer -- Select PUBLIC"
-		select KCONFIG_DDR_TYPE_SAMSUNG
+		select KCONFIG_DDR_TYPE_KINGSTON
 	config TCHIP_TR726C_CUSTOMER_JINGHUA
 		bool " Tchip Customer -- Select JING HUA"
 		select KCONFIG_DDR_TYPE_KINGSTON

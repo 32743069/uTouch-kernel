@@ -110,7 +110,11 @@ static const struct tchip_device tchip_misc[] =
     {.name = "TN",.active = 1},
 #endif
 #ifdef	CONFIG_NMC1XXX_WIFI_MODULE
+    #ifdef CONFIG_NMC1XXX_SPI_722_VERSION
     {.name = "NMC1000",	.active = 1,},
+    #else
+    {.name = "NMC1000v94x",	.active = 1,},
+    #endif
 #endif
 };
 
