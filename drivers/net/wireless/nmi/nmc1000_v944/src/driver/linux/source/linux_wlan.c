@@ -70,7 +70,7 @@ static int linux_wlan_lock_timeout(void* vp,NMI_Uint32 timeout);
 #include <linux/vmalloc.h>
 #include <linux/fs.h>
 struct task_struct* nmi_mac_thread;
-unsigned char mac_add[] = {0x00, 0x80, 0xC2, 0x5E, 0xa2, 0xba};
+unsigned char mac_add[] = {0x00, 0x80, 0xC2, 0x5E, 0x22, 0x22};
 #endif //brandy_0724 ]]
 
 int once = -1;
@@ -354,43 +354,57 @@ extern volatile uint32_t gpio_v_shadow;
 };*/
 
 #if 1 // add by tchip
+#define USE_IC_MAC_ADDR 2
+#define USE_RANDOM_MAC_ADDR 0
+#define USE_FLASH_MAC_ADDR 1
 char GetSNSectorInfo(char * pbuf);
-static char tempBuf[512]={0x0};
-static int use_tchip_mac = 0;
+static unsigned char flash_mac_add[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+static int use_tchip_mac = USE_RANDOM_MAC_ADDR; //0=ramdem 1=flash 2=ic addr
 void tchip_mac_setup(char *str)
 {
 	if(str[0] == '1')
-		use_tchip_mac = 1;
+		use_tchip_mac = USE_FLASH_MAC_ADDR;
+	else if (str[0] == '2')
+		use_tchip_mac = USE_IC_MAC_ADDR;
 	else
-		use_tchip_mac = 0;
+		use_tchip_mac = USE_RANDOM_MAC_ADDR;
 
 	printk(KERN_INFO "####### tchip_mac = %d \n", use_tchip_mac);
 }
 __setup("tchip_mac=",tchip_mac_setup);
 
-char* tchip_get_mac_addr()
+int tchip_get_flash_mac_addr(unsigned char* mac_addr_buf)
 {
      int i;
      static int is_inited=0;
+	char tempBuf[512]={0x0};
 
-	if( is_inited )
-		return &tempBuf[506];
-	// read flash mac addr 
-	GetSNSectorInfo(tempBuf);
-        printk(KERN_ERR "########  get flash mac :");
-    	for (i =506 ; i < 512; i++) {
-        	printk(KERN_ERR "%d:%02x, ", i,tempBuf[i]);
+	if( is_inited ){
+		memcpy(mac_addr_buf,flash_mac_add,6);	
+	}else{
+		GetSNSectorInfo(tempBuf);
+		/*
+        	printk(KERN_ERR "########  get flash mac :");
+    		for (i =506 ; i < 512; i++) {
+        		printk(KERN_ERR "%d:%02x, ", i,tempBuf[i]);
+		}*/
+		memcpy(flash_mac_add,&tempBuf[506],6);	
+		memcpy(mac_addr_buf,flash_mac_add,6);	
+		/*
+		if( !is_valid_ether_addr(flash_mac_add) ){
+			printk(KERN_ERR "#########tchip, the mac read from flash is unvalid\n");
+			return -1;
+		}*/
+		is_inited = 1;
 	}
-
-	is_inited = 1;
-	return &tempBuf[506];
+	return 0;
 }
 int tchip_set_mac_addr()
 {
-	char* tchip_mac_addr ;
+	unsigned char tchip_mac_addr[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-	if ( use_tchip_mac ){
-		tchip_mac_addr = tchip_get_mac_addr();
+	if ( use_tchip_mac == USE_FLASH_MAC_ADDR ){
+		tchip_get_flash_mac_addr( tchip_mac_addr );
 		if( !is_valid_ether_addr(tchip_mac_addr) ){
 			printk(KERN_ERR "#########tchip, the mac read from flash is unvalid\n");
 			return -1;
@@ -1702,7 +1716,7 @@ static int linux_wlan_init_test_config(struct net_device *dev, linux_wlan_t* p_n
 
 	unsigned char c_val[64];
 	#ifndef STATIC_MACADDRESS
-	unsigned char mac_add[] = {0x00, 0x80, 0xC2, 0x5E, 0xa2, 0xff};
+	unsigned char mac_add[] = {0x00, 0x80, 0xC2, 0x5E, 0xff, 0xff};
 	#endif
 	unsigned int chipid = 0;
 
@@ -1943,10 +1957,23 @@ static int linux_wlan_init_test_config(struct net_device *dev, linux_wlan_t* p_n
 	if (!g_linux_wlan->oup.wlan_cfg_set(0, WID_11N_TXOP_PROT_DISABLE, c_val, 1, 0,0))
 		goto _fail_;	
 
+#if 1 //add by tchip
+if( use_tchip_mac == USE_IC_MAC_ADDR){
+	//memcpy(c_val, mac_add, 6);
+	//if (!g_linux_wlan->oup.wlan_cfg_set(0, WID_MAC_ADDR, c_val, 6, 0,0))
+	//	goto _fail_;
+
+}else{
+#endif //tchip
 	memcpy(c_val, mac_add, 6);
 
 	if (!g_linux_wlan->oup.wlan_cfg_set(0, WID_MAC_ADDR, c_val, 6, 0,0))
 		goto _fail_;
+
+#if 1 //add by tchip
+}
+#endif //tchip
+
 	
 	/**
 		AP only
@@ -2533,9 +2560,10 @@ int nmc1000_wlan_init(struct net_device *dev,perInterface_wlan_t* p_nic)
 		wlan_init_locks(g_linux_wlan);
 
 #if 1 //add by tchip			/// RACHEL !!!!!!!!!!!!!!!
-		if ( 0==tchip_set_mac_addr() ){
+		if ( use_tchip_mac == USE_FLASH_MAC_ADDR ){
 			printk(KERN_INFO "########  tchip set mac from flash \n");
-		}else{
+			tchip_set_mac_addr() ;
+		}else if( use_tchip_mac == USE_RANDOM_MAC_ADDR ){
 #endif //tchip
 #ifdef STATIC_MACADDRESS
 		nmi_mac_thread = kthread_run(linux_wlan_read_mac_addr,NULL,"nmi_mac_thread");
@@ -2543,7 +2571,9 @@ int nmc1000_wlan_init(struct net_device *dev,perInterface_wlan_t* p_nic)
 			PRINT_ER("couldn't create Mac addr thread\n");
 		}
 #endif
-		}// add by tchip			/// RACHEL !!!!!!!!!!!!!!!
+#if 1 //add by tchip			/// RACHEL !!!!!!!!!!!!!!!
+		}			/// RACHEL !!!!!!!!!!!!!!!
+#endif //tchip
  
 		linux_to_wlan(&nwi,g_linux_wlan);
 
