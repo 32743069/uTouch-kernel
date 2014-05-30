@@ -399,13 +399,17 @@ static int rk_fb_io_init(struct rk29_fb_setting_info *fb_setting)
 	if(ret < 0)
 		return ret;
 
-	return rk_gpio_request(LCD_EN_PIN, GPIOF_DIR_OUT, LCD_EN_VALUE, "lcd_en");
+	ret = rk_gpio_request(LCD_EN_PIN, GPIOF_DIR_OUT, LCD_EN_VALUE, "lcd_en");
+	mdelay(50);
+
+	return ret;
 }
 
 static int rk_fb_io_disable(void)
 {
 	gpio_set_value(LCD_CS_PIN, !LCD_CS_VALUE);
 	gpio_set_value(LCD_EN_PIN, !LCD_EN_VALUE);
+	mdelay(50);
 
 	return 0;
 }
@@ -414,6 +418,7 @@ static int rk_fb_io_enable(void)
 {
 	gpio_set_value(LCD_CS_PIN, LCD_CS_VALUE);
 	gpio_set_value(LCD_EN_PIN, LCD_EN_VALUE);
+	mdelay(50);
 
 	return 0;
 }
