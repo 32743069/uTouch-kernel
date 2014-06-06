@@ -271,6 +271,7 @@ choice
 		select KCONFIG_DDR_TYPE_KINGSTON
 	config TCHIP_TR726C_CUSTOMER_CUBE
 		bool " Tchip Customer -- Select CUBE"
+		select KCONFIG_DDR_TYPE_KINGSTON
 	config TCHIP_TR726C_CUSTOMER_GBXY
 		bool " Tchip Customer -- Select Gou Bang Xing Ye"
 	config TCHIP_TR726C_CUSTOMER_AIPU
@@ -279,6 +280,7 @@ choice
 		bool " Tchip Customer -- Select Hui Ke"
 	config TCHIP_TR726C_CUSTOMER_XFH
 		bool " Tchip Customer -- Select xin fei hong"
+		select KCONFIG_DDR_TYPE_SAMSUNG
 	config TCHIP_TR726C_CUSTOMER_FUGE_IBALL
 		bool " Tchip Customer -- Select Fu Ge - Iball"
 		select KCONFIG_DDR_TYPE_KINGSTON

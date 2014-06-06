@@ -74,6 +74,7 @@ Comprehensive camera device registration:
 #define TC_B_SIV121D
 #define TC_F_SIV121D
 #define TC_B_GC2035
+#define TC_F_GC0328
 #else //all for public
 //back
 #define TC_B_BF3920
