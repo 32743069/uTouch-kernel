@@ -54,6 +54,7 @@ choice
 	config TCHIP_MACH_TR726C
 		bool "TR726C ,Public 7' Machine "
 		select TCHIP_MACHINE
+		select KCONFIG_DDR_TYPE_KINGSTON
 
 endchoice
 
@@ -265,13 +266,11 @@ choice
 
 	config TCHIP_TR726C_CUSTOMER_PUBLIC
 		bool " Tchip Customer -- Select PUBLIC"
-		select KCONFIG_DDR_TYPE_KINGSTON
+	#	select KCONFIG_DDR_TYPE_KINGSTON
 	config TCHIP_TR726C_CUSTOMER_JINGHUA
 		bool " Tchip Customer -- Select JING HUA"
-		select KCONFIG_DDR_TYPE_KINGSTON
 	config TCHIP_TR726C_CUSTOMER_CUBE
 		bool " Tchip Customer -- Select CUBE"
-		select KCONFIG_DDR_TYPE_KINGSTON
 	config TCHIP_TR726C_CUSTOMER_GBXY
 		bool " Tchip Customer -- Select Gou Bang Xing Ye"
 	config TCHIP_TR726C_CUSTOMER_AIPU
@@ -280,10 +279,8 @@ choice
 		bool " Tchip Customer -- Select Hui Ke"
 	config TCHIP_TR726C_CUSTOMER_XFH
 		bool " Tchip Customer -- Select xin fei hong"
-		select KCONFIG_DDR_TYPE_SAMSUNG
 	config TCHIP_TR726C_CUSTOMER_FUGE_IBALL
 		bool " Tchip Customer -- Select Fu Ge - Iball"
-		select KCONFIG_DDR_TYPE_KINGSTON
 endchoice
 
 #------------DDR type----------------
