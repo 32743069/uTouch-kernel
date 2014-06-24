@@ -85,6 +85,8 @@ int ComposeModemInfo(char * Info);
 
 char tchip_version[100];
 #define SET_ALL_ACTIVE_DEVICE_VERSION(list)	set_all_active_device_version(list, (sizeof(list)/sizeof(list[0])), tchip_version)
+#define SET_ALL_ACTIVE_DEVICE_VERSION_EX(list,prefix)	set_all_active_device_version_ex(list, (sizeof(list)/sizeof(list[0])), tchip_version, prefix)
+
 
 static void init_boardVersion(void)
 {
@@ -146,6 +148,9 @@ static void init_cameraVersion(void)
 		strupper(&str[1], cur_sensor[SENSOR_FRONT]->name);
 		strcat(tchip_version, str);
 	}
+#else
+	// 只限最先定义的两个摄像头名字显示出来,  two camera names
+	set_all_active_device_version_ex(tchip_cameras, 2, tchip_version, "+");
 #endif
 }
 
@@ -162,7 +167,7 @@ static void init_tpType(void)
 	struct tchip_device * cur = GET_CUR_DEVICE(tchip_tps);
 
 	if(0 != cur)
-		add2version(tchip_version, cur);
+		add2versionex(tchip_version, cur,"@");
 }
 
 static void init_otgType(void)
@@ -174,21 +179,10 @@ static void init_otgType(void)
 
 static void init_customer(void)
 {
-#if defined (CONFIG_TCHIP_TR726C_CUSTOMER_PUBLIC)
-	strcat(tchip_version,"_Public");
-#elif defined (CONFIG_TCHIP_TR726C_CUSTOMER_JINGHUA)
-	strcat(tchip_version,"_jh");
-#elif defined (CONFIG_TCHIP_TR726C_CUSTOMER_CUBE)
-	strcat(tchip_version,"_cube");
-#elif defined (CONFIG_TCHIP_TR726C_CUSTOMER_GBXY)
-	strcat(tchip_version,"_gbxy");
-#elif defined (CONFIG_TCHIP_TR726C_CUSTOMER_AIPU)
-	strcat(tchip_version,"_aipu");
-#elif defined (CONFIG_TCHIP_TR726C_CUSTOMER_HUIKE)
-	strcat(tchip_version,"_Huike");
-#elif defined (CONFIG_TCHIP_TR726C_CUSTOMER_XFH)
-	strcat(tchip_version,"_XFH");
-#endif
+	struct tchip_device * cur = GET_CUR_DEVICE(tchip_customer);
+
+	if(0 != cur)
+		add2version(tchip_version, cur);
 }
 static void init_JogballType(void)
 {
@@ -214,6 +208,21 @@ static void init_gpsVersion(void)
 			strcat(tchip_version,"_GNS7560");
 		#endif
 }
+static void init_BtVersion()
+{
+	SET_ALL_ACTIVE_DEVICE_VERSION(tchip_bt);
+}
+static void init_LcdVersion()
+{
+	struct tchip_device * cur = GET_CUR_DEVICE(tchip_screen);
+
+	if(0 != cur)
+		add2version(tchip_version, cur);
+}
+static void init_GsensorVersion()
+{
+	SET_ALL_ACTIVE_DEVICE_VERSION(tchip_gsensor);
+}
 
 static void rk29_init_Version(void)
 {
@@ -226,21 +235,30 @@ static void rk29_init_Version(void)
 	 */
 	strcat(tchip_version, "(");
 	init_boardVersion();
+	init_wifiVersion();
+	init_BtVersion();
+	init_touchVersion();
+	init_tpType();
+	init_cameraVersion();
+	init_LcdVersion();
+	init_GsensorVersion();
+	init_miscVersion();
+	init_customer();
+	init_curTime();
+	strcat(tchip_version, ")");
+/*
 	init_codecVersion();
 	init_touchVersion();
 	init_miscVersion();
-	init_wifiVersion();
 	init_encryptVersion();
-	init_cameraVersion();
 	init_hdmiVersion();
 	init_gpsVersion();
 	init_modemVersion();
-	init_tpType();
 	init_otgType();
-	init_customer();
 	init_JogballType();
 	init_curTime();
 	strcat(tchip_version, ")");
+*/
 }
 
 static FILE *out;

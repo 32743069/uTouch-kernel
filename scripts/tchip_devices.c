@@ -33,12 +33,6 @@ static const struct tchip_device tchip_boards[] =
         {   .name = "TR726C",.active = 1},
 #elif defined(CONFIG_TCHIP_MACH_TR976Q)
         {   .name = "TR976Q",.active = 1},
-#elif defined(CONFIG_TCHIP_MACH_TR785)
-#if defined(CONFIG_TCHIP_MACH_TR785_V10)
-        {   .name = "TR785V10",.active = 1},
-#else
-        { .name = "TR785", .active = 1 },
-#endif  /* CONFIG_TCHIP_MACH_TR785 */
 #endif
 };
 
@@ -61,130 +55,25 @@ static const struct tchip_device tchip_touchs[] =
 	{.name = "ICN83XX",.active = 1},
 #elif defined(CONFIG_TOUCHSCREEN_ICN850X)
 	{.name = "ICN850X",.active = 1},
+#else
+	{.name = "NoTouch",.active = 1},
 #endif
 
 };
 
 /*
- * 	encrypt support list
- */
-static const struct tchip_device tchip_encrypts[] =
-{
-#ifdef	CONFIG_AT18_DEVICE
-	{.name = "AT18",.active = 1},
-#elif defined(CONFIG_AT28_DEVICE)
-	{.name = "AT28",.active = 1},
-#elif defined(CONFIG_AT38_DEVICE)
-	{.name = "AT38",.active = 1},
-#endif
-};
-
-/*
- * 	tp support list
+ * 	tp screen  support list
  */
 static const struct tchip_device tchip_tps[] =
 {
-#ifdef	CONFIG_TCHIP_TP_01
-	{.name = "TP01",.active = 1},
-#elif defined(CONFIG_TCHIP_TP_02)
-	{.name = "TP02",.active = 1},
+#ifdef CONFIG_TCHIP_TP_FEICU
+	{.name = "FC",.active = 1},
+#else 
+	{.name = "Unknow",.active = 1},
 #endif
 };
 
-/*
- *  gsensor support list
- */
-static const struct tchip_device tchip_misc[] =
-{
-#if defined(CONFIG_GS_DMARD06) && defined(CONFIG_GS_MMA8452) && defined(CONFIG_GS_MC3230) && defined(CONFIG_GS_MMA7660)
-    {.name = "GS1",.active = 1},
-#endif
-#if defined(CONFIG_MFD_WM831X_I2C) && defined(CONFIG_PMU_AXP152) && defined (CONFIG_MFD_TPS65910)
-    {.name = "PMU1",.active = 1},
-#endif
 
-#if defined(CONFIG_LCD_SAMSUNG_LSL070NL01)
-    {.name = "IPS",.active = 1},
-#endif
-#if defined(CONFIG_LCD_RK2926_V86)
-    {.name = "TN",.active = 1},
-#endif
-#ifdef	CONFIG_NMC1XXX_WIFI_MODULE
-    #ifdef CONFIG_NMC1XXX_SPI_722_VERSION
-    {.name = "NMC1000",	.active = 1,},
-    #else
-    {.name = "NMC1000v94x",	.active = 1,},
-    #endif
-#endif
-};
-
-/*
- * 	modem support list
- */
-static const struct tchip_device tchip_modems[] =
-{
-#ifdef	CONFIG_MODEM_ROCKCHIP_DEMO
-	[TCSI_GET_MODEM_INDEX(TCSI_MODEM_OTHERS)] =
-	{
-		.name = "MODEM",
-#ifdef	CONFIG_TCHIP_MACH_MODEM_OTHERS
-		.active = 1,
-#endif
-	},
-#endif
-#ifdef	CONFIG_TDM330
-	[TCSI_GET_MODEM_INDEX(TCSI_MODEM_TDM330)] =
-	{
-		.name = "TDM330",
-#ifdef	CONFIG_TCHIP_MACH_MODEM_TDM330
-		.active = 1,
-#endif
-	},
-#endif
-};
-
-/*
- * 	hdmi support list
- */
-static const struct tchip_device tchip_hdmis[] =
-{
-#if	defined(CONFIG_HDMI_RK610)
-	[TCSI_GET_HDMI_INDEX(TCSI_HDMI_RK610)] =
-	{
-		.name = "RK610HDMI",
-#if defined(CONFIG_TCHIP_MACH_HDMI_RK610)
-		.active = 1,
-#endif
-	},
-#endif
-#if	defined(CONFIG_ANX7150) || defined(CONFIG_ANX7150_NEW)
-	[TCSI_GET_HDMI_INDEX(TCSI_HDMI_ANX7150)] =
-	{
-		.name = "ANX7150",
-#ifdef	CONFIG_TCHIP_MACH_ANX7150
-		.active = 1,
-#endif
-	},
-#endif
-#if	defined(CONFIG_CAT6611) || defined(CONFIG_CAT6611_NEW)
-	[TCSI_GET_HDMI_INDEX(TCSI_HDMI_CAT6611)] =
-	{
-		.name = "CAT6611",
-#if defined(CONFIG_TCHIP_MACH_CAT6611)
-		.active = 1,
-#endif
-	},
-#endif
-#if	defined(CONFIG_HDMI_RK30)
-	[TCSI_GET_HDMI_INDEX(TCSI_HDMI_RK30)] =
-	{
-		.name = "RK30HDMI",
-#if defined(CONFIG_TCHIP_MACH_HDMI_RK30)
-		.active = 1,
-#endif
-	},
-#endif
-};
 
 /*
  * 	wifi support list
@@ -192,84 +81,130 @@ static const struct tchip_device tchip_hdmis[] =
 static const struct tchip_device tchip_wifis[] =
 {
 #ifdef CONFIG_MT5931_MT6622
-     {
-         .name = "CDTK25931",
-         .active = 1,
-     }
+     { .name = "CDTK25931", .active = 1,},
 #endif
 #ifdef	CONFIG_AR6003
-	[TCSI_GET_WIFI_INDEX(TCSI_WIFI_AR6003)] =
-	{
-		.name = "AR6302",
-#ifdef	CONFIG_TCHIP_MACH_AR6003
-		.active = 1,
-#endif
-	},
+	{.name = "AR6302", .active = 1,},
 #endif
 #ifdef	CONFIG_BCM4329
-	[TCSI_GET_WIFI_INDEX(TCSI_WIFI_BCM4329)] =
-	{
-		.name = "B23",
-#ifdef	CONFIG_TCHIP_MACH_BCM4329
-		.active = 1,
-#endif
-	},
+	{.name = "B23",	.active = 1,},
 #endif
 #ifdef	CONFIG_MV8686
-	[TCSI_GET_WIFI_INDEX(TCSI_WIFI_MV8686)] =
-	{
-		.name = "MV8686",
-#ifdef	CONFIG_TCHIP_MACH_MV8686
-		.active = 1,
-#endif
-	},
+	{.name = "MV8686", .active = 1,	},
 #endif
 #ifdef	CONFIG_RTL8192CU
-	[TCSI_GET_WIFI_INDEX(TCSI_WIFI_RTL8192)] =
-	{
-		.name = "RTL8188",
-#ifdef	CONFIG_TCHIP_MACH_RTL8192
-		.active = 1,
-#endif
-	},
+	{.name = "RTL8188", .active = 1,},
 #endif
 #ifdef	CONFIG_RK903
-	[TCSI_GET_WIFI_INDEX(TCSI_WIFI_RK903)] =
-	{
-		.name = "RK903",
-		.active = 1,
-	},
+	{.name = "RK903", .active = 1,},
 #endif
 #ifdef	CONFIG_RT5370V2_STA
-	[TCSI_GET_WIFI_INDEX(TCSI_WIFI_RT5370)] =
-	{
-		.name = "RT5370",
-		.active = 1,
-	},
+	{.name = "RT5370",	.active = 1,},
 #endif
 #ifdef	CONFIG_RT5370
-	[TCSI_GET_WIFI_INDEX(TCSI_WIFI_RT5370V2)] =
-	{
-		.name = "RT5370V2",
-		.active = 1,
-	},
+	{.name = "RT5370V2", .active = 1,},
 #endif
 #ifdef	CONFIG_MT7601
-	[TCSI_GET_WIFI_INDEX(TCSI_WIFI_MT7601)] =
-	{
-		.name = "MT7601",
-		.active = 1,
-	},
+	{.name = "MT7601", .active = 1,},
 #endif
 #ifdef	CONFIG_AIDC
-	[TCSI_GET_WIFI_INDEX(TCSI_WIFI_AIDC)] =
-	{
-		.name = "8188ETV_MT7601",
-		.active = 1,
-	},
+	{.name = "8188ETV_MT7601", .active = 1,},
+#endif
+#ifdef CONFIG_NMC1XXX_WIFI_MODULE
+    #ifdef CONFIG_NMC1XXX_SPI_722_VERSION
+    {.name = "NMCv722",        .active = 1,},
+    #else
+    {.name = "NMCv94x",    .active = 1,},
+    #endif
 #endif
 };
 
+/* ###########   bt list 
+*/
+
+static const struct tchip_device tchip_bt[] =
+{
+#ifdef CONFIG_MT5931_MT6622
+     { .name = "MT6622", .active = 1,},
+#else
+     { .name = "NoBt", .active =1, },
+#endif
+};
+
+
+/*      camera support list
+*/
+static const struct tchip_device tchip_cameras[] =
+{
+#ifdef CONFIG_TCHIP_CAM_ALL
+     { .name = "CAM+all", .active = 1,},
+#else
+
+#ifdef CONFIG_TCHIP_CAM_B_BF3920
+     { .name = "BF3920", .active = 1,},
+#endif
+#ifdef CONFIG_TCHIP_CAM_B_BF3703
+     { .name = "BF3703", .active = 1,},
+#endif
+#ifdef CONFIG_TCHIP_CAM_F_GC0308
+     { .name = "GC0308", .active = 1,},
+#endif
+#ifdef CONFIG_TCHIP_CAM_F_GC0328
+     { .name = "GC0328", .active = 1,},
+#endif
+
+#endif // end of cam+all
+	
+};
+	
+static const struct tchip_device tchip_screen[] =
+{
+#ifdef CONFIG_LCD_RK2926_V86
+     { .name = "TN", .active = 1,},
+#else
+     { .name = "NoLCD", .active = 1,},
+#endif
+};
+
+static const struct tchip_device tchip_gsensor[] =
+{
+#ifdef CONFIG_GS_STK831X
+     { .name = "STK8312", .active = 1,},
+#else
+     { .name = "NoGs", .active = 1,},
+#endif
+};
+
+static const struct tchip_device tchip_misc[] =
+{
+
+};
+
+static const struct tchip_device tchip_customer[] =
+{
+#if defined (CONFIG_TCHIP_TR726C_CUSTOMER_PUBLIC)
+     { .name = "Public", .active = 1,},
+#elif defined (CONFIG_TCHIP_TR726C_CUSTOMER_JINGHUA)
+     { .name = "jh", .active = 1,},
+#elif defined (CONFIG_TCHIP_TR726C_CUSTOMER_CUBE)
+     { .name = "cube", .active = 1,},
+#elif defined (CONFIG_TCHIP_TR726C_CUSTOMER_GBXY)
+     { .name = "gbxy", .active = 1,},
+#elif defined (CONFIG_TCHIP_TR726C_CUSTOMER_AIPU)
+     { .name = "aipu", .active = 1,},
+#elif defined (CONFIG_TCHIP_TR726C_CUSTOMER_HUIKE)
+     { .name = "Huike", .active = 1,},
+#elif defined (CONFIG_TCHIP_TR726C_CUSTOMER_XFH)
+     { .name = "XFH", .active = 1,},
+#endif
+};
+
+
+
+
+
+
+		
 /*
  * 	codec support list
  */
@@ -351,6 +286,86 @@ static const struct tchip_device tchip_codecs[] =
 #endif
 };
 
+/*
+ * 	encrypt support list
+ */
+static const struct tchip_device tchip_encrypts[] =
+{
+#ifdef	CONFIG_AT18_DEVICE
+	{.name = "AT18",.active = 1},
+#elif defined(CONFIG_AT28_DEVICE)
+	{.name = "AT28",.active = 1},
+#elif defined(CONFIG_AT38_DEVICE)
+	{.name = "AT38",.active = 1},
+#endif
+};
+/*
+ * 	modem support list
+ */
+static const struct tchip_device tchip_modems[] =
+{
+#ifdef	CONFIG_MODEM_ROCKCHIP_DEMO
+	[TCSI_GET_MODEM_INDEX(TCSI_MODEM_OTHERS)] =
+	{
+		.name = "MODEM",
+#ifdef	CONFIG_TCHIP_MACH_MODEM_OTHERS
+		.active = 1,
+#endif
+	},
+#endif
+#ifdef	CONFIG_TDM330
+	[TCSI_GET_MODEM_INDEX(TCSI_MODEM_TDM330)] =
+	{
+		.name = "TDM330",
+#ifdef	CONFIG_TCHIP_MACH_MODEM_TDM330
+		.active = 1,
+#endif
+	},
+#endif
+};
+/*
+ * 	hdmi support list
+ */
+static const struct tchip_device tchip_hdmis[] =
+{
+#if	defined(CONFIG_HDMI_RK610)
+	[TCSI_GET_HDMI_INDEX(TCSI_HDMI_RK610)] =
+	{
+		.name = "RK610HDMI",
+#if defined(CONFIG_TCHIP_MACH_HDMI_RK610)
+		.active = 1,
+#endif
+	},
+#endif
+#if	defined(CONFIG_ANX7150) || defined(CONFIG_ANX7150_NEW)
+	[TCSI_GET_HDMI_INDEX(TCSI_HDMI_ANX7150)] =
+	{
+		.name = "ANX7150",
+#ifdef	CONFIG_TCHIP_MACH_ANX7150
+		.active = 1,
+#endif
+	},
+#endif
+#if	defined(CONFIG_CAT6611) || defined(CONFIG_CAT6611_NEW)
+	[TCSI_GET_HDMI_INDEX(TCSI_HDMI_CAT6611)] =
+	{
+		.name = "CAT6611",
+#if defined(CONFIG_TCHIP_MACH_CAT6611)
+		.active = 1,
+#endif
+	},
+#endif
+#if	defined(CONFIG_HDMI_RK30)
+	[TCSI_GET_HDMI_INDEX(TCSI_HDMI_RK30)] =
+	{
+		.name = "RK30HDMI",
+#if defined(CONFIG_TCHIP_MACH_HDMI_RK30)
+		.active = 1,
+#endif
+	},
+#endif
+};
+
 
 
 struct tchip_device *get_cur_device(struct tchip_device *devices, int size)
@@ -406,7 +421,21 @@ struct tchip_device *set_all_active_device_version(struct tchip_device *devices,
 		}
 	}
 }
+struct tchip_device *set_all_active_device_version_ex(struct tchip_device *devices, int size, char *version,char* prefix)
+{
+	int i;
 
+	for(i = 0; i < size; devices++,i++)
+	{
+		if(devices->active)
+		{
+			if ( i > 0 )
+				add2versionex(version, devices,prefix);
+			else
+				add2version(version, devices);
+		}
+	}
+}
 #if 0
 void cur_sensor_init(void)
 {

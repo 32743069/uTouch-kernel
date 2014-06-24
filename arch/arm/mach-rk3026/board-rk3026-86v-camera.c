@@ -41,64 +41,7 @@ Comprehensive camera device registration:
 #define TC_CAMERA_FRONT_DN_PIN RK30_PIN3_PB3
 #endif
 
-
-
-///#################   select camera for customer
-
-#if   defined(CONFIG_TCHIP_TR726C_CUSTOMER_JINGHUA)
-#define TC_B_GC0308
-#define TC_F_GC0329
-#define TC_F_SP0838
-#define TC_B_SP0838
-
-#elif defined(CONFIG_TCHIP_TR726C_CUSTOMER_CUBE)
-#define TC_F_GC0308
-#define TC_F_SP0838
-
-#elif defined(CONFIG_TCHIP_TR726C_CUSTOMER_AIPU)
-#define TC_F_GC0311
-#define TC_F_SP0A19
-#define TC_B_BF3920
-#define TC_B_BF3703
-#define TC_B_SP0A19
-
-
-#elif defined(CONFIG_TCHIP_TR726C_CUSTOMER_GBXY)
-#define TC_F_GC0328
-
-#elif defined(CONFIG_TCHIP_TR726C_CUSTOMER_HUIKE)
-#define TC_B_GC2035
-#define TC_F_GC0309
-
-#elif defined(CONFIG_TCHIP_TR726C_CUSTOMER_XFH)
-#define TC_B_SIV121D
-#define TC_F_SIV121D
-#define TC_B_GC2035
-#define TC_F_GC0328
-#else //all for public
-//back
-#define TC_B_BF3920
-#define TC_B_BF3703
-#define TC_B_GC2035
-#define TC_B_GC0308
-#define TC_B_SP0838
-#define TC_B_SP0A19
-#define TC_B_SIV121D
-#define TC_B_SP2518
-//fornt
-#define TC_F_GC0308
-#define TC_F_GC0328
-#define TC_F_GC0329
-#define TC_F_GC0311
-#define TC_F_GC0309
-#define TC_F_SP0838
-#define TC_F_SP0A19
-#define TC_F_SIV121D
-
-#endif
-
-
-
+///#################   select camera for customer in drivers/tchip/Kconfig
 
 
 static struct rkcamera_platform_data new_camera[] = { 
@@ -115,7 +58,7 @@ static struct rkcamera_platform_data new_camera[] = {
                         0),
 
 */
-#if defined(TC_B_BF3920)
+#if defined(CONFIG_TCHIP_CAM_B_BF3920) || defined(CONFIG_TCHIP_CAM_ALL)
    new_camera_device_ex(RK29_CAM_SENSOR_BF3920,
                          back,
 	#if defined(CONFIG_TCHIP_TR726C_CUSTOMER_AIPU)
@@ -139,7 +82,7 @@ static struct rkcamera_platform_data new_camera[] = {
                          24),
 #endif
 
-#ifdef TC_B_BF3703
+#if defined(CONFIG_TCHIP_CAM_B_BF3703) || defined(CONFIG_TCHIP_CAM_ALL)
     new_camera_device_ex(RK29_CAM_SENSOR_BF3703,
                         back,
 			90,
@@ -159,7 +102,7 @@ static struct rkcamera_platform_data new_camera[] = {
                         24),
 #endif
 
-#ifdef TC_B_GC2035
+#if defined(CONFIG_TCHIP_CAM_B_GC2035 ) || defined(CONFIG_TCHIP_CAM_ALL)
     new_camera_device_ex(RK29_CAM_SENSOR_GC2035,
 			    back,
 			    90,
@@ -179,7 +122,7 @@ static struct rkcamera_platform_data new_camera[] = {
 			    24),
 #endif
 
-#ifdef TC_B_SP0838
+#if defined(CONFIG_TCHIP_CAM_B_SP0838 ) || defined(CONFIG_TCHIP_CAM_ALL)
     new_camera_device_ex(RK29_CAM_SENSOR_SP0838,
 			    back,
 			    90,
@@ -199,7 +142,7 @@ static struct rkcamera_platform_data new_camera[] = {
 			    24),
 #endif
 
-#ifdef TC_B_SP0A19
+#if defined(CONFIG_TCHIP_CAM_B_SP0A19 ) || defined(CONFIG_TCHIP_CAM_ALL)
     new_camera_device_ex(RK29_CAM_SENSOR_SP0A19,
 			    back,
 			    90,
@@ -219,7 +162,7 @@ static struct rkcamera_platform_data new_camera[] = {
 			    24),
 #endif
 
-#ifdef TC_B_GC0308
+#if defined(CONFIG_TCHIP_CAM_B_GC0308 ) || defined(CONFIG_TCHIP_CAM_ALL)
     new_camera_device_ex(RK29_CAM_SENSOR_GC0308,
 			    back,
 			    90,
@@ -239,7 +182,7 @@ static struct rkcamera_platform_data new_camera[] = {
 			    24),
 #endif
 
-#ifdef TC_B_SIV121D
+#if defined(CONFIG_TCHIP_CAM_B_SIV121D) || defined(CONFIG_TCHIP_CAM_ALL)
     new_camera_device_ex(RK29_CAM_SENSOR_SIV121D,
 			    back,
 			    90,
@@ -258,7 +201,7 @@ static struct rkcamera_platform_data new_camera[] = {
 			    0,
 			    24),
 #endif
-#ifdef TC_B_SP2518
+#if defined(CONFIG_TCHIP_CAM_B_SP2518 ) || defined(CONFIG_TCHIP_CAM_ALL)
     new_camera_device_ex(RK29_CAM_SENSOR_SP2518,
 			    back,
 			    90,
@@ -290,7 +233,7 @@ new_camera_device(RK29_CAM_SENSOR_GC0308,
 
 
 */
-#ifdef TC_F_GC0311
+#if defined(CONFIG_TCHIP_CAM_F_GC0311 ) || defined(CONFIG_TCHIP_CAM_ALL)
     new_camera_device_ex(RK29_CAM_SENSOR_GC0311,
 			    front,
 			#if  defined(CONFIG_TCHIP_TR726C_CUSTOMER_AIPU)
@@ -314,7 +257,7 @@ new_camera_device(RK29_CAM_SENSOR_GC0308,
 			    24),
 #endif
 
-#ifdef TC_F_GC0309
+#if defined(CONFIG_TCHIP_CAM_F_GC0309 ) || defined(CONFIG_TCHIP_CAM_ALL)
     new_camera_device_ex(RK29_CAM_SENSOR_GC0309,
 			    front,
 			    270,
@@ -334,7 +277,7 @@ new_camera_device(RK29_CAM_SENSOR_GC0308,
 			    24),
 #endif
 			
-#ifdef TC_F_GC0308
+#if defined(CONFIG_TCHIP_CAM_F_GC0308 ) || defined(CONFIG_TCHIP_CAM_ALL)
     new_camera_device_ex(RK29_CAM_SENSOR_GC0308,
 			    front,
 			    270,
@@ -354,7 +297,7 @@ new_camera_device(RK29_CAM_SENSOR_GC0308,
 			    24),
 #endif
 
-#ifdef TC_F_SP0838
+#if defined(CONFIG_TCHIP_CAM_F_SP0838 ) || defined(CONFIG_TCHIP_CAM_ALL)
     new_camera_device_ex(RK29_CAM_SENSOR_SP0838,
 			    front,
 			    270,
@@ -374,7 +317,7 @@ new_camera_device(RK29_CAM_SENSOR_GC0308,
 			    24),
 #endif
 
-#ifdef TC_F_SP0A19
+#if defined(CONFIG_TCHIP_CAM_F_SP0A19 ) || defined(CONFIG_TCHIP_CAM_ALL)
     new_camera_device_ex(RK29_CAM_SENSOR_SP0A19,
 			    front,
 			    270,
@@ -394,7 +337,7 @@ new_camera_device(RK29_CAM_SENSOR_GC0308,
 			    24),
 #endif
 
-#ifdef TC_F_GC0329
+#if defined(CONFIG_TCHIP_CAM_F_GC0329 ) || defined(CONFIG_TCHIP_CAM_ALL)
     new_camera_device_ex(RK29_CAM_SENSOR_GC0329,
 			    front,
 			    270,
@@ -414,7 +357,7 @@ new_camera_device(RK29_CAM_SENSOR_GC0308,
 			    24),
 #endif
 
-#ifdef TC_F_GC0328
+#if defined(CONFIG_TCHIP_CAM_F_GC0328 ) || defined(CONFIG_TCHIP_CAM_ALL)
     new_camera_device_ex(RK29_CAM_SENSOR_GC0328,
 			    front,
 			    270,
@@ -434,7 +377,7 @@ new_camera_device(RK29_CAM_SENSOR_GC0308,
 			    24),
 #endif
 
-#ifdef TC_F_SIV121D
+#if defined(CONFIG_TCHIP_CAM_F_SIV121D) || defined(CONFIG_TCHIP_CAM_ALL)
     new_camera_device_ex(RK29_CAM_SENSOR_SIV121D,
 			    front,
 			    270,
