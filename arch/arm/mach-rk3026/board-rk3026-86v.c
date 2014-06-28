@@ -2252,7 +2252,7 @@ static void tr726c_shutdown(void)
     {
         // if have not power supply, just return(shutdown)
 	#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
-        if( nmc1000_dc_not_in && 0 == dwc_vbus_status())// && 0 == nmc1000_charging_status)
+        if( nmc1000_dc_not_in )// && 0 == dwc_vbus_status())// && 0 == nmc1000_charging_status)
 	#else
         if((gpio_get_value (rk30_adc_battery_platdata.dc_det_pin) != rk30_adc_battery_platdata.dc_det_level)&&(0== dwc_vbus_status() ))
 	#endif
@@ -2262,12 +2262,16 @@ static void tr726c_shutdown(void)
         }
         else
         {
+	#if defined(CONFIG_TCHIP_MACH_TR726C) && defined(CONFIG_NMC1XXX_WIFI_MODULE)
+                arm_pm_restart(0, "charge");//power_press_cnt=0;
+	#else
 		if (1 == dwc_vbus_status())
 		{
 	    		printk("%s-%d: usb charge restart\n", __FUNCTION__, __LINE__);
                 	arm_pm_restart(0, NULL);
 		}else
                 	arm_pm_restart(0, "charge");//power_press_cnt=0;
+	#endif
         }
     }
 }
