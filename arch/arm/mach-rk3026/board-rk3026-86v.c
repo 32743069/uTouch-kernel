@@ -29,6 +29,7 @@
 #include <linux/regulator/machine.h>
 #include <linux/rfkill-rk.h>
 #include <linux/sensor-dev.h>
+#include <linux/mc3XXX.h>
 #include <linux/mfd/tps65910.h>
 #include <linux/regulator/act8846.h>
 #include <linux/regulator/act8931.h>
@@ -587,7 +588,36 @@ static struct sensor_platform_data mma8452_info = {
 	.poll_delay_ms = 30,
         .init_platform_hw = mma8452_init_platform_hw,
         .orientation = {-1, 0, 0, 0, -1, 0, 0, 0, 1},
+
+
 };
+#endif
+
+/*MC3XXX gsensor*/
+#if defined (CONFIG_GS_MC3XXX)
+#define MC3XXX_INT_PIN	GS_INT_PIN
+
+static int MC3XXX_init_platform_hw(void)
+{
+/*
+	if(gpio_request(MC3XXX_INT_PIN,NULL) != 0){
+		gpio_free(MC3XXX_INT_PIN);
+		printk("MC3XXX_init_platform_hw gpio_request error\n");
+		return -EIO;
+	}
+	gpio_pull_updown(MC3XXX_INT_PIN, 1);
+*/
+	return 0;
+}
+
+static struct sensor_platform_data MC3XXX_info = {
+	.type = SENSOR_TYPE_ACCEL,
+	.irq_enable = 0,
+	.poll_delay_ms = 30,
+        .init_platform_hw = MC3XXX_init_platform_hw,
+        .orientation = {1, 0, 0, 0, 1, 0, 0, 0, 1},
+};
+
 #endif
 
 // lsm303d gsensor
@@ -2039,6 +2069,17 @@ static struct i2c_board_info __initdata i2c1_info[] = {
 		.platform_data = &mma8452_info,
 	},
 #endif
+
+#if defined (CONFIG_GS_MC3XXX)
+	{
+		.type	        = "gs_mc3XXX",
+		.addr	        = 0x4c,
+		.flags	        = 0,
+		.irq	        = MC3XXX_INT_PIN,
+		.platform_data = &MC3XXX_info,
+	},
+#endif
+
 #if defined (CONFIG_GS_LIS3DH)
 	{
 		.type	        = "gs_lis3dh",

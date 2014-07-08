@@ -6,7 +6,7 @@
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
  * may be copied, distributed, and modified under those terms.
- *
+ 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -35,7 +35,11 @@
 #include <linux/l3g4200d.h>
 #include <linux/sensor-dev.h>
 
+#define __GSENSOR_MC3XXX__
 
+#ifdef __GSENSOR_MC3XXX__
+#include <linux/mc3XXX.h>
+#endif
 /*
 sensor-dev.c v1.1 add pressure and temperature support 2013-2-27
 sensor-dev.c v1.2 add akm8963 support 2013-3-10
@@ -156,7 +160,6 @@ static int sensor_chip_init(struct i2c_client *client)
 	    (struct sensor_private_data *) i2c_get_clientdata(client);	
 	struct sensor_operate *ops = sensor_ops[(int)sensor->i2c_id->driver_data];
 	int result = 0;
-	
 	if(ops)
 	{
 		sensor->ops = ops;
@@ -331,7 +334,7 @@ static int sensor_irq_init(struct i2c_client *client)
 	{
 		//INIT_DELAYED_WORK(&sensor->delaywork, sensor_delaywork_func);
 		if(sensor->pdata->poll_delay_ms < 0)
-			sensor->pdata->poll_delay_ms = 30;
+			sensor->pdata->poll_delay_ms = 20;
 		
 		result = gpio_request(client->irq, sensor->i2c_id->name);
 		if (result)
@@ -516,7 +519,7 @@ static long angle_dev_ioctl(struct file *file,
 		mutex_unlock(&sensor->data_mutex);		
 		break;
 	default:
-		result = -ENOTTY;
+			result = -ENOTTY;
 	goto error;
 	}
 
@@ -1944,6 +1947,7 @@ static const struct i2c_device_id sensor_id[] = {
 	{"gs_kxtj9", ACCEL_ID_KXTJ9},
 	{"gs_lis3dh", ACCEL_ID_LIS3DH},
 	{"gs_mma7660", ACCEL_ID_MMA7660},
+	{"gs_mc3XXX", ACCEL_ID_MC3XXX},    // MCUBE
 	{"gs_mxc6225", ACCEL_ID_MXC6225},
 	{"gs_stk831x", ACCEL_ID_STK831X},
 	/*compass*/
