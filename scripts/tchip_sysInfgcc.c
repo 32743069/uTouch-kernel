@@ -184,6 +184,14 @@ static void init_customer(void)
 	if(0 != cur)
 		add2version(tchip_version, cur);
 }
+static void init_ddr(void)
+{
+	struct tchip_device * cur = GET_CUR_DEVICE(tchip_ddr);
+
+	if(0 != cur)
+		add2version(tchip_version, cur);
+}
+
 static void init_JogballType(void)
 {
 #if defined (CONFIG_TCHIP_JOGBALL)
@@ -244,6 +252,7 @@ static void rk29_init_Version(void)
 	init_GsensorVersion();
 	init_miscVersion();
 	init_customer();
+	init_ddr();
 	init_curTime();
 	strcat(tchip_version, ")");
 /*

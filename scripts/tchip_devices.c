@@ -199,6 +199,16 @@ static const struct tchip_device tchip_customer[] =
 #endif
 };
 
+static const struct tchip_device tchip_ddr[] =
+{
+#if defined(CONFIG_TCHIP_DDR_ADATA_D2ND1211A_PATCH)
+     { .name = "weigang", .active = 1,},
+#elif defined(CONFIG_TCHIP_DDR_KINGSTON_D2516EC4BXGG_PATCH)
+     { .name = "kingston", .active = 1,},
+#else
+     //{ .name = "", .active = 1,},
+#endif
+};
 
 
 
