@@ -49,8 +49,8 @@ choice
 
 	config TCHIP_TR726C_CUSTOMER_PUBLIC
 		bool " Tchip Customer -- Select PUBLIC"
-		#---------- ddr --------
-		#select KCONFIG_DDR_TYPE_KINGSTON
+		#---------- ddr patchs --------
+		select TCHIP_DDR_KINGSTON_D2516EC4BXGG_PATCH
 		#----------- tp --------
 		select TCHIP_TP_FEICU
 		#----------- camera -----
@@ -97,28 +97,13 @@ choice
 		select TCHIP_CAM_ALL
 endchoice
 
-#------------DDR type----------------
-config KCONFIG_DDR_TYPE_SAMSUNG
+#------------special DDR type patchs ----------------
+#--- kingston ddr patch
+config TCHIP_DDR_KINGSTON_D2516EC4BXGG_PATCH
 		bool
-config KCONFIG_DDR_TYPE_KINGSTON
+#--- wei gang ddr patch
+config TCHIP_DDR_ADATA_D2ND1211A_PATCH
 		bool
-config KCONFIG_DDR_TYPE_ELIXIR
-		bool
-
-choice
-	prompt "Select CUSTOMER DDR3 TYPE"
-	default  TCHIP_DDR_TYPE_SAMSUNG
-
-	config  TCHIP_DDR_TYPE_SAMSUNG
-		bool  "samsung ddr"
-		depends on KCONFIG_DDR_TYPE_SAMSUNG
-	config  TCHIP_DDR_TYPE_KINGSTON
-		bool  "kingston ddr"
-		depends on KCONFIG_DDR_TYPE_KINGSTON
-	config  TCHIP_DDR_TYPE_ELIXIR
-		bool  "elixir ddr"
-		depends on KCONFIG_DDR_TYPE_ELIXIR
-endchoice
 
 #--------------- camera ----------------
 config TCHIP_CAM_ALL

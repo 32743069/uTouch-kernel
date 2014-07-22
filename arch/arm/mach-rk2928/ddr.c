@@ -27,17 +27,27 @@
 
 typedef uint32_t uint32 ;
 
-#if defined(CONFIG_TCHIP_DDR_TYPE_KINGSTON)
+#if defined(CONFIG_TCHIP_DDR_KINGSTON_D2516EC4BXGG_PATCH)
 #define DDR3_DDR2_DLL_DISABLE_FREQ    (250)  // 颗粒dll disable的频率
 #define DDR3_DDR2_ODT_DISABLE_FREQ    (250)  //颗粒odt disable的频率
+#elif defined(CONFIG_TCHIP_DDR_ADATA_D2ND1211A_PATCH)
+#define DDR3_DDR2_DLL_DISABLE_FREQ    (125)  // 颗粒dll disable的频率
+#define DDR3_DDR2_ODT_DISABLE_FREQ    (125)  //颗粒odt disable的频率
 #else
 #define DDR3_DDR2_DLL_DISABLE_FREQ    (300)  // 颗粒dll disable的频率
 #define DDR3_DDR2_ODT_DISABLE_FREQ    (333)  //颗粒odt disable的频率
 #endif
+
 #define SR_IDLE                       (0x1)   //unit:32*DDR clk cycle, and 0 for disable auto self-refresh
 #define PD_IDLE                       (0x40)  //unit:DDR clk cycle, and 0 for disable auto power-down
+
+#if defined(CONFIG_TCHIP_DDR_ADATA_D2ND1211A_PATCH)
+#define PHY_ODT_DISABLE_FREQ          (266)  //定义主控端odt disable的频率
+#define PHY_DLL_DISABLE_FREQ          (266)  //定义主控端dll bypass的频率
+#else
 #define PHY_ODT_DISABLE_FREQ          (333)  //定义主控端odt disable的频率
 #define PHY_DLL_DISABLE_FREQ          (266)  //定义主控端dll bypass的频率
+#endif
 
 //#define PMU_BASE_ADDR           RK30_PMU_BASE //??RK 2928 PMU在哪里
 #define SDRAMC_BASE_ADDR        RK2928_DDR_PCTL_BASE
