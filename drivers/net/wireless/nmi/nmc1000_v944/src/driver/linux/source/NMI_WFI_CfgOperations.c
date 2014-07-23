@@ -3041,7 +3041,7 @@ void    NMI_WFI_frame_register(struct wiphy *wiphy,struct net_device *dev,
 	}
 	/*If mac is closed, then return*/
 	// [[ rachel : modified svn 295
-	if(!g_linux_wlan->nmc1000_initialized && !reg)
+	if(!g_linux_wlan->nmc1000_initialized)// && !reg)
 	{
 		PRINT_D(GENERIC_DBG,"Return since mac is closed\n");
 		return;

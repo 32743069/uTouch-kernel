@@ -31,6 +31,7 @@ int sdio_xfer_cnt(void);
 uint32_t nmi_get_chipid(uint8_t update);
 void init_customer_gpio(uint32_t protect);
 void custom_gpio_reprogram(void);
+extern uint8_t is_net_dev_init;
 NMI_Uint16 Set_machw_change_vir_if(NMI_Bool bValue);
 
 //static uint32_t vmm_table[NMI_VMM_TBL_SIZE];
@@ -2844,8 +2845,13 @@ void nmc1000_gpio_set_value(int gpio_num,int v)
 	uint32_t is_mac_open = g_mac_open;
 	uint32_t mac_state_changed = 0;
 	
-	printk(">> GPIO_RSET[%d]: %d -mac_open: %d\n",gpio_num,v,is_mac_open);
+	printk(">> GPIO_SET[%d]: %d -mac_open: %d\n",gpio_num,v,is_mac_open);
 	//printk(">> GPIO_SET: %d\n",is_mac_open);
+	if(!is_net_dev_init)
+	{
+		printk("[nmc1000] Driver should be initialized first \n");
+		return;
+	}
 	if(gpio_num != 1 && gpio_num != 3 && gpio_num != 4)
 	{
 		printk("[nmc1000] GPIO number is out of range\n");
@@ -2902,7 +2908,14 @@ int nmc1000_gpio_get_value(int gpio_num)
 	uint32_t reg = 0;
 	uint32_t is_mac_open = g_mac_open;
 	uint32_t mac_state_changed = 0;
-	printk(">> GPIO_RGET[%d] - mac_open:%d \n",gpio_num,is_mac_open);
+	printk(">> GPIO_GET[%d] - mac_open:%d \n",gpio_num,is_mac_open);
+
+	if(!is_net_dev_init)
+	{
+		printk("[nmc1000] Driver should be initialized first \n");
+		return -1;
+	
+	}
 	
 	if(gpio_num != 1 && gpio_num != 3 && gpio_num != 4 && gpio_num != 6)
 	{
@@ -2969,9 +2982,10 @@ int nmc1000_gpio_get_value(int gpio_num)
 void custom_gpio_reprogram(void)
 {
 	/*Reprogram GPIO values*/
-	nmc1000_gpio_set_value(1,(gpio_v_shadow & 0x1<<1));
-	nmc1000_gpio_set_value(3,(gpio_v_shadow & 0x1<<3));
-	nmc1000_gpio_set_value(4,(gpio_v_shadow & 0x1<<4));					
+	nmc1000_gpio_set_value(1,(gpio_v_shadow & 0x1<<1)?1:0);
+	nmc1000_gpio_set_value(3,(gpio_v_shadow & 0x1<<3)?1:0);
+	nmc1000_gpio_set_value(4,(gpio_v_shadow & 0x1<<4)?1:0);
+	
 }
 
 void init_customer_gpio(uint32_t protect)

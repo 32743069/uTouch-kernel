@@ -64,6 +64,8 @@ extern int tchip_dc_det_irq_release(unsigned int irq_pin);
 
 static int linux_wlan_lock_timeout(void* vp,NMI_Uint32 timeout);
 
+uint8_t is_net_dev_init = 0;
+
 #include "svnrevision.h"
 
 #ifdef STATIC_MACADDRESS//brandy_0724 [[
@@ -2622,6 +2624,8 @@ int nmc1000_wlan_init(struct net_device *dev,perInterface_wlan_t* p_nic)
 #endif
 		printk(">> Getting the FW\n");
 
+		/* Disable IRQ till FW start */
+		linux_wlan_disable_irq(IRQ_WAIT);
 		if(linux_wlan_get_firmware(nic)){
 			PRINT_ER("Can't get firmware \n");
 			ret = -EIO;
@@ -2636,6 +2640,9 @@ int nmc1000_wlan_init(struct net_device *dev,perInterface_wlan_t* p_nic)
 			goto _fail_irq_enable_;
 		}
 
+		/* Enable IRQ */
+		linux_wlan_enable_irq();
+		
 		printk(">> Starting the FW\n");
 		/* Start firmware*/
 		ret = linux_wlan_start_firmware(nic);
@@ -2690,10 +2697,10 @@ int nmc1000_wlan_init(struct net_device *dev,perInterface_wlan_t* p_nic)
 	_fail_locks_:
 		wlan_deinit_locks(g_linux_wlan);
 		PRINT_ER("WLAN Iinitialization FAILED\n");
+		g_mac_open = 0;
 	}else{
 		PRINT_D(INIT_DBG,"nmc1000 already initialized\n");
 	}
-	//g_mac_open = 0;
 	return ret;
 }
 
@@ -2744,6 +2751,7 @@ int mac_open(struct net_device *ndev){
 	int status;
 	int ret = 0;
 	int i = 0;	
+	volatile uint32_t is_open = g_mac_open;
 	struct NMI_WFI_priv* priv;
 	
 	printk("MAC OPEN[%x]: VAR: %d\n",ndev,once);
@@ -2757,8 +2765,10 @@ int mac_open(struct net_device *ndev){
 	#endif	
 
 	down(&custom_gpio_lock);
-	custom_chip_wakeup();
-		
+
+	if(!g_mac_open)		
+		custom_chip_wakeup();
+
 	nic = netdev_priv(ndev);
 	priv = wiphy_priv(nic->nmc_netdev->ieee80211_ptr->wiphy);
 	
@@ -2854,7 +2864,7 @@ int mac_open(struct net_device *ndev){
 	  NMI_PRINTF("3\n");
     netif_wake_queue(ndev); 
 	NMI_PRINTF("4\n");
-	
+
 	up(&custom_gpio_lock);	
 	//g_mac_open = 1;
 	//linux_wlan_lock(&close_exit_sync);
@@ -3298,7 +3308,7 @@ int mac_ioctl(struct net_device *ndev, struct ifreq *req, int cmd){
 	NMI_Sint32 s32Error = NMI_SUCCESS;
 
 
-	printk("drivre IO control\n");
+	printk("driver IO control\n");
 	//struct iwreq *wrq = (struct iwreq *) req;	// tony moved to case SIOCSIWPRIV
 	#ifdef USE_WIRELESS
 	nic = netdev_priv(ndev);
@@ -3734,7 +3744,7 @@ static int __init init_nmc_driver(void){
 	custom_unlock_bus(is_mac_opened_yet);
 
 	//setup_timer(&custom_gpio_timer,(void(*)(unsigned long))check_DCDET,0);
-
+	is_net_dev_init = 1;
 	PRINT_D(INIT_DBG,"Device has been initialized successfully\n");
     return 0;
 #endif
