@@ -35,11 +35,7 @@
 #include <linux/l3g4200d.h>
 #include <linux/sensor-dev.h>
 
-#define __GSENSOR_MC3XXX__
 
-#ifdef __GSENSOR_MC3XXX__
-#include <linux/mc3XXX.h>
-#endif
 /*
 sensor-dev.c v1.1 add pressure and temperature support 2013-2-27
 sensor-dev.c v1.2 add akm8963 support 2013-3-10
