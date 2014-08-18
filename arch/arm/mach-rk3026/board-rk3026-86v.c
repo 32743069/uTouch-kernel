@@ -1781,6 +1781,38 @@ struct aw5x0x_platform_data  aw5x0x_info = {
 		#endif
 };
 #endif
+
+#if defined(CONFIG_TOUCHSCREEN_CT69X)
+/*
+notice: before config the ct69x,please read drivers\input\touchscreen\ct69x_ts\readme.txt first
+*/
+int ct69x_ts_init_platform_hw(void)
+{
+         if(gpio_request(TOUCH_RST_PIN,NULL) != 0){
+              gpio_free(TOUCH_RST_PIN);
+              printk("ct69x_ts_init_platform_hw gpio_request error\n");
+              return -EIO;
+         }
+         if(gpio_request(TOUCH_INT_PIN,NULL) != 0){
+              gpio_free(TOUCH_INT_PIN);
+              printk("ct69x_ts_init_platform_hw  gpio_request error\n");
+              return -EIO;
+         }
+         gpio_set_value(TOUCH_RST_PIN,!TOUCH_RST_VALUE);
+         mdelay(50);
+         gpio_set_value(TOUCH_RST_PIN,TOUCH_RST_VALUE);
+         msleep(300);
+         return 0;
+	
+}
+	
+struct ts_hw_data     ct69x_ts_info = {
+        .reset_gpio = TOUCH_RST_PIN,
+        .touch_en_gpio = TOUCH_INT_PIN,
+        .init_platform_hw = ct69x_ts_init_platform_hw,
+};
+#endif
+
 /***********************************************************
 *	i2c
 ************************************************************/
@@ -2001,6 +2033,14 @@ static struct i2c_board_info __initdata i2c2_info[] = {
         .addr           = 0x40,
         .flags          = 0,
         .platform_data =&gslx680_info,
+    },
+#endif
+#if defined (CONFIG_TOUCHSCREEN_CT69X)
+    {
+        .type           = "ct69x_ts",
+        .addr           = 0x38,
+        .flags          = 0,
+        .platform_data =&ct69x_ts_info,
     },
 #endif
 };

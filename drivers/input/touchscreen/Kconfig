@@ -1105,7 +1105,8 @@ config ATMEL_MXT1386
 config TOUCHSCREEN_ILITEK_AIMVF
 		tristate "ilitek_aimvF touchscreen panel support "
 		depends on I2C2_RK29 || I2C2_RK30   
-
+config TOUCHSCREEN_CT69X
+       tristate "CT69X based touchscreens: CT69X Interface"
 comment "zet62xx support"
 source  "drivers/input/touchscreen/zet62xx/Kconfig"	
 comment "AW5X0X support" 
