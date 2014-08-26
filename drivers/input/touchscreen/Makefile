@@ -108,4 +108,5 @@ obj-$(CONFIG_TP_760_TS)                    += tp_760_ts.o
 obj-$(CONFIG_TOUCHSCREEN_ILITEK_AIMVF)	+= ilitek_aimvF.o
 obj-y += zet62xx/
 obj-y += aw5x0x/
+obj-$(CONFIG_TOUCHSCREEN_CT69X)	+= ct69x_ts/
 obj-$(CONFIG_TOUCHSCREEN_ICN850X)      += ICN850X/
